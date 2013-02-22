@@ -52,6 +52,14 @@ def call_muscle(input_seqs):
     return fasta_reader(StringIO(out))
 
 
+def seq_map_to_ref(seq_align, ref_align):
+
+    out_seq = []
+    for s, r in zip(seq_align, ref_align):
+        if r != '-':
+            out_seq.append(s)
+    return ''.join(out_seq)
+
 
 
 

@@ -40,3 +40,13 @@ def test_muscle_basic_call():
     res = list(GeneralSeqTools.call_muscle(seqs))
     eq_(res, aln)
 
+
+def test_seq_map_to_ref():
+
+    ref_align = 'ATCTCT--ATCT'
+    seq_align = 'A-CCCT-AATCT'
+    cor_align = 'A-CCCTATCT'
+
+    res = GeneralSeqTools.seq_map_to_ref(seq_align,ref_align)
+    eq_(res, cor_align)
+
