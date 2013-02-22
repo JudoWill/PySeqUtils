@@ -6,6 +6,7 @@ from tempfile import NamedTemporaryFile as NTF
 from concurrent.futures import ThreadPoolExecutor
 import shlex
 import os
+from pandas import DataFrame
 
 
 def fasta_reader(handle):
@@ -79,8 +80,23 @@ def seq_align_to_ref(input_seqs, ref_seq, max_workers=None):
         yield name, ref_align
 
 
+def convert_seqs_to_dataframe(input_seqs):
+
+    items = {}
+    for name, seq in input_seqs:
+        items[name] = list(seq)
+
+    return DataFrame(items).T
 
 
+def convert_seqDF_to_list(frame):
 
+    print frame
+
+    out_seqs = []
+    for key, row in frame.iterrows():
+        out_seqs.append((key, ''.join(row)))
+
+    return out_seqs
 
 

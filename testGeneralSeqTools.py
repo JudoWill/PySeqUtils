@@ -1,8 +1,8 @@
 __author__ = 'will'
 
 from StringIO import StringIO
-from nose.tools import eq_
-
+from nose.tools import eq_, ok_
+from pandas import DataFrame
 import GeneralSeqTools
 
 
@@ -77,3 +77,29 @@ def test_seq_align_to_ref_multi():
     result = [('test1', cor_mapping)] * 10
 
     eq_(res, result)
+
+
+def test_convert_seqs_to_dataframe():
+
+    indict = {
+        'seq1': list('ATCGATTGC'),
+        'seq2': list('ATCGATTGC'),
+    }
+    inseqs = [('seq1', 'ATCGATTGC'), ('seq2', 'ATCGATTGC')]
+    tdf = DataFrame(indict).T
+
+    res = GeneralSeqTools.convert_seqs_to_dataframe(inseqs)
+    ok_((res == tdf).all().all())
+
+
+def test_convert_seqDF_to_list():
+
+    indict = {
+        'seq1': list('ATCGATTGC'),
+        'seq2': list('ATCGATTGC'),
+        }
+    inseqs = [('seq1', 'ATCGATTGC'), ('seq2', 'ATCGATTGC')]
+    tdf = DataFrame(indict).T
+
+    res = GeneralSeqTools.convert_seqDF_to_list(tdf)
+    eq_(res, inseqs)
