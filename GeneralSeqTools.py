@@ -1,6 +1,6 @@
 __author__ = 'will'
 from itertools import groupby, islice
-from subprocess import check_output
+import subprocess # import check_output
 from StringIO import StringIO
 from tempfile import NamedTemporaryFile as NTF
 import shlex
@@ -47,7 +47,7 @@ def call_muscle(input_seqs):
         seq_handle.flush()
         os.fsync(seq_handle.fileno())
         cmd = 'muscle -in %s -quiet' % seq_handle.name
-        out = check_output(shlex.split(cmd))
+        out = subprocess.check_output(shlex.split(cmd))
 
     return fasta_reader(StringIO(out))
 

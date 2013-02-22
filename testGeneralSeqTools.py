@@ -1,7 +1,6 @@
 __author__ = 'will'
 
 from StringIO import StringIO
-
 from nose.tools import eq_
 
 import GeneralSeqTools
@@ -38,10 +37,6 @@ def test_muscle_basic_call():
 
     seqs = [('test1', 'ATCGATTGC'), ('test2', 'ATCGATGC')]
     aln = [('test1', 'ATCGATTGC'), ('test2', 'ATCGA-TGC')]
-    #muscle_res = '\n'.join(['>test1', 'ATCGATTGC', '>test2', 'ATCGA-TGC'])
-
     res = list(GeneralSeqTools.call_muscle(seqs))
     eq_(res, aln)
-
-
 
