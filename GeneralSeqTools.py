@@ -1,8 +1,9 @@
 __author__ = 'will'
-from itertools import groupby, islice
+from itertools import groupby, islice, imap
 import subprocess # import check_output
 from StringIO import StringIO
 from tempfile import NamedTemporaryFile as NTF
+from concurrent.futures import ThreadPoolExecutor
 import shlex
 import os
 
@@ -49,7 +50,7 @@ def call_muscle(input_seqs):
         cmd = 'muscle -in %s -quiet' % seq_handle.name
         out = subprocess.check_output(shlex.split(cmd))
 
-    return fasta_reader(StringIO(out))
+    return list(fasta_reader(StringIO(out)))
 
 
 def seq_map_to_ref(seq_align, ref_align):
@@ -59,6 +60,23 @@ def seq_map_to_ref(seq_align, ref_align):
         if r != '-':
             out_seq.append(s)
     return ''.join(out_seq)
+
+
+def seq_align_to_ref(input_seqs, ref_seq, max_workers=None):
+    """Aligns all sequences to a reference.
+    """
+
+    check_seqs = [[(name, seq), ('__ref__', ref_seq)] for name, seq in input_seqs]
+    if max_workers > 1:
+        executor = ThreadPoolExecutor(max_workers=max_workers)
+        res = executor.map(call_muscle, check_seqs)
+    else:
+        res = imap(call_muscle, check_seqs)
+
+    for alignment in res:
+        name = alignment[0][0]
+        ref_align = seq_map_to_ref(alignment[0][1], alignment[1][1])
+        yield name, ref_align
 
 
 

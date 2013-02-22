@@ -50,3 +50,30 @@ def test_seq_map_to_ref():
     res = GeneralSeqTools.seq_map_to_ref(seq_align,ref_align)
     eq_(res, cor_align)
 
+
+def test_seq_align_to_ref():
+
+    ref_seq = 'ATCGATTGC'
+    test_seq = 'ATCGATGC'
+    cor_mapping = 'ATCGA-TGC'
+
+    inp = [('test1', test_seq)] * 10
+
+    res = list(GeneralSeqTools.seq_align_to_ref(inp, ref_seq))
+    result = [('test1', cor_mapping)] * 10
+
+    eq_(res, result)
+
+
+def test_seq_align_to_ref_multi():
+
+    ref_seq = 'ATCGATTGC'
+    test_seq = 'ATCGATGC'
+    cor_mapping = 'ATCGA-TGC'
+
+    inp = [('test1', test_seq)] * 10
+
+    res = list(GeneralSeqTools.seq_align_to_ref(inp, ref_seq, max_workers=5))
+    result = [('test1', cor_mapping)] * 10
+
+    eq_(res, result)
