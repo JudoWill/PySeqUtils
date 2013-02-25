@@ -52,10 +52,12 @@ def make_mrbayes_trees(input_seqs, mrbayes_kwargs=None, is_aa=True):
     return con_tree, trees
 
 
-
 def generate_mrbayes_nexus(alignment_path, output_path,
                            nchains=3, ngen=50000, samplefreq=1000,
                            is_aa=True):
+    """Generates the NEXUS command to control MrBayes in the form that I usually use. This will likely be expanded as I
+     have to include more issues.
+    """
 
     cmd = """begin mrbayes;
    set autoclose=yes nowarn=yes;
