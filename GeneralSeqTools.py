@@ -7,6 +7,25 @@ from concurrent.futures import ThreadPoolExecutor
 import shlex
 import os
 from pandas import DataFrame
+from Bio.Seq import Seq
+from Bio import SeqIO
+from Bio.SeqRecord import SeqRecord
+from Bio.Seq import IUPAC
+
+
+def write_nexus_alignment(input_seqs, handle, is_aa=True):
+
+    alphabet = IUPAC.protein if is_aa else IUPAC.unambiguous_dna
+    seqs = []
+    tmp_handle = StringIO()
+    for name, seq in input_seqs:
+        nseq = ''.join(seq).replace('O', '-')
+        bseq = SeqRecord(Seq(nseq, alphabet=alphabet), id=name)
+        seqs.append(bseq)
+    SeqIO.write(seqs, tmp_handle, 'nexus')
+    tmp_handle.seek(0)
+    strdata = tmp_handle.read().replace("'", '')
+    handle.write(strdata)
 
 
 def fasta_reader(handle):
