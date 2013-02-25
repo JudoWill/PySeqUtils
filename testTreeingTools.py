@@ -1,6 +1,6 @@
 __author__ = 'will'
 
-from nose.tools import eq_, ok_
+from nose.tools import ok_
 
 import TreeingTools
 
@@ -18,3 +18,20 @@ def test_generate_mrbayes_nexus():
               'sumt;']
     for check in checks:
         yield ok_, check in cmd
+
+
+def test_make_mrbayes_trees():
+
+    seqs = [('test1', 'ATTTCTATCTATA'),
+            ('test2', 'ATTTCGATCTATA'),
+            ('test3', 'ATTTCGATGTATA'),
+            ('test4', 'ATCTCGATGTATA'),
+            ('test5', 'ATCTCGATGTATA'),
+            ('test6', 'ATCTCGATGTAAA'),
+            ('test7', 'ATCTCGATGTTAA'),
+            ('test8', 'ATCTCGATGTTAT')]
+
+    con_tree, all_trees = TreeingTools.make_mrbayes_trees(seqs, is_aa=False)
+    for name, seq in seqs:
+        node = con_tree.find_node_with_taxon_label(name)
+        yield ok_, node is not None

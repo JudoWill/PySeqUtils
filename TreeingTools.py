@@ -1,13 +1,56 @@
 __author__ = 'will'
 
 import dendropy
+import contextlib
+from subprocess import check_output
+import shlex
+from tempfile import mkdtemp
+import shutil
+from GeneralSeqTools import write_nexus_alignment
 
 
-def make_tree(input_seqs):
+@contextlib.contextmanager
+def tmp_directory(*args, **kwargs):
+    """A context manager which changes the working directory to the given
+    path, and then changes it back to its previous value on exit.
+
+    """
+    path = mkdtemp(*args, **kwargs)
+    try:
+        yield path + '/'
+    finally:
+        shutil.rmtree(path)
+
+
+def make_mrbayes_trees(input_seqs, mrbayes_kwargs=None, is_aa=True):
     """Takes an ALIGNED set of sequences and generates a phylogenetic tree using MrBayes.
     """
 
-    pass
+    with tmp_directory() as tmpdir:
+        align_file = tmpdir + 'seqalign.nxs'
+        mrbayes_cmd_file = tmpdir + 'analysis.nxs'
+        multi_prob = tmpdir + 'seqalign.nxs.trprobs'
+        cons_file = tmpdir + 'seqalign.nxs.con.tre'
+
+        with open(align_file, 'w') as handle:
+            write_nexus_alignment(input_seqs, handle, is_aa=is_aa)
+
+        with open(mrbayes_cmd_file, 'w') as handle:
+            if mrbayes_kwargs is None:
+                mrbayes_kwargs = {}
+            txt = generate_mrbayes_nexus(align_file, align_file, is_aa=is_aa, **mrbayes_kwargs)
+            handle.write(txt)
+
+        cmd = '/home/will/mb ' + mrbayes_cmd_file
+        check_output(shlex.split(cmd))
+
+        with open(multi_prob) as handle:
+            trees = dendropy.TreeList.get_from_stream(handle, schema='nexus')
+        with open(cons_file) as handle:
+            con_tree = dendropy.Tree.get_from_stream(handle, schema='nexus')
+
+    return con_tree, trees
+
 
 
 def generate_mrbayes_nexus(alignment_path, output_path,
