@@ -85,6 +85,8 @@ end;"""
 
 
 def bats_format_nexus(treeset, outhandle, trop_dict):
+    """Writes the treeset in the format required by BatS.
+    """
 
     def process_tree_line(line):
 
@@ -114,6 +116,7 @@ def bats_format_nexus(treeset, outhandle, trop_dict):
         tstr = tree.as_newick_string(reverse_translate=print_items, suppress_edge_lengths=True)
         outhandle.write('tree tree_%i [&R] %s;\n' % (num, tstr))
     outhandle.write('end;\n')
+
 
 def run_bats(treeset, trop_dict, nreps=5000):
     """Runs the BatS analysis on a treeset.
