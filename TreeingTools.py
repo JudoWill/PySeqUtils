@@ -1,12 +1,16 @@
 __author__ = 'will'
 
+import os
 import dendropy
 import contextlib
 from subprocess import check_output
 import shlex
 from tempfile import mkdtemp
+from tempfile import NamedTemporaryFile as NTF
 import shutil
 from GeneralSeqTools import write_nexus_alignment
+import csv
+from StringIO import StringIO
 
 
 @contextlib.contextmanager
@@ -107,6 +111,26 @@ def bats_format_nexus(treeset, outhandle, trop_dict):
 
     outhandle.write('begin trees;\n')
     for num, tree in enumerate(treeset, 1):
-        tstr = tree.as_newick_string(reverse_translate=print_items)
-        outhandle.write('tree tree_%i %s;\n' % (num, tstr))
+        tstr = tree.as_newick_string(reverse_translate=print_items, suppress_edge_lengths=True)
+        outhandle.write('tree tree_%i [&R] %s;\n' % (num, tstr))
     outhandle.write('end;\n')
+
+def run_bats(treeset, trop_dict, nreps=5000):
+    """Runs the BatS analysis on a treeset.
+    """
+
+    nstates = len(set(trop_dict.values()))
+    with NTF() as handle:
+        bats_format_nexus(treeset, handle, trop_dict)
+        handle.flush()
+        os.fsync(handle)
+        cmd = 'java -jar /home/will/BaTS_beta_build2.jar single %s %i %i'
+        out = check_output(shlex.split(cmd % (handle.name, nreps, nstates)))
+
+    handle = StringIO(out)
+    headers = []
+    for line in handle:
+        if line.startswith('Stat'):
+            headers = line.strip().split('\t')
+            break
+    return list(csv.DictReader(handle, fieldnames=headers, delimiter='\t'))[:-2]

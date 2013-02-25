@@ -77,7 +77,15 @@ def test_bats_format_nexus():
     eq_(num, len(tlist) + 1, 'Some trees were missing!')
 
 
+def test_run_bats_rand_trees():
 
+    taxons = dendropy.TaxonSet(['test_check%i' % i for i in range(100)])
+    trop_dict = dict([('test_check%i' % i, (i % 2) == 0) for i in range(100)])
+    tlist = [dendropy.treesim.uniform_pure_birth(taxons) for _ in range(20)]
+    treelist = dendropy.TreeList(tlist)
 
+    res = TreeingTools.run_bats(treelist, trop_dict, nreps=10)
 
+    for row in res:
+        ok_(float(row['significance']) > 0.05)
 
