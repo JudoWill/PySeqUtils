@@ -78,3 +78,35 @@ end;"""
     }
 
     return cmd % tdict
+
+
+def bats_format_nexus(treeset, outhandle, trop_dict):
+
+    def process_tree_line(line):
+
+        parts = line.strip().split()
+        return 'tree %s [&R] %s\n' % (parts[1], parts[-1])
+
+    def print_items(taxon):
+        return conv_dict.get(str(taxon), None)
+
+    leafs = set()
+    for tree in treeset:
+        for leaf in tree.leaf_iter():
+            leafs.add(str(leaf.taxon))
+    leafs = sorted(leafs, key=lambda x: len(x), reverse=True)
+
+    outhandle.write('#NEXUS\n\n\n')
+    outhandle.write('begin states;\n')
+    conv_dict = {}
+    for num, leaf in enumerate(leafs, 1):
+        outhandle.write('%i %s\n' % (num, trop_dict[leaf]))
+        conv_dict[leaf] = str(num)
+
+    outhandle.write('End;\n\n')
+
+    outhandle.write('begin trees;\n')
+    for num, tree in enumerate(treeset, 1):
+        tstr = tree.as_newick_string(reverse_translate=print_items)
+        outhandle.write('tree tree_%i %s;\n' % (num, tstr))
+    outhandle.write('end;\n')
