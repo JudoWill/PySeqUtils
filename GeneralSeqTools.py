@@ -119,3 +119,10 @@ def convert_seqDF_to_list(frame):
     return out_seqs
 
 
+def extract_region_from_alignment(input_aln, start, stop):
+    """Extracts a region from an alignment
+    """
+
+    for name, seq in input_aln:
+        yield name, seq[start:stop]
+
