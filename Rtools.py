@@ -25,3 +25,21 @@ return(y)
     normed_df.columns = input_df.columns
 
     return normed_df
+
+
+def convert_columns_to_factors(rpy_dataframe, col_refs):
+    """Converts a set of columns in a RPY dataframe into Factors.
+
+      col_refs -- [(colA, refA), (colB, refB), ...]
+    """
+
+    relevel_fun = robjects.r("""relevel_obj <- function(inputframe, column, ref)
+{
+inputframe[,column] <- relevel(factor(inputframe[,column]), ref = ref)
+return(inputframe)
+}""")
+
+    for col, ref in col_refs:
+        rpy_dataframe = relevel_fun(rpy_dataframe, col, ref)
+
+    return rpy_dataframe
