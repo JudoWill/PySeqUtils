@@ -6,6 +6,7 @@ import Rtools
 from pandas import DataFrame, Series, Index
 from scipy import randn
 import pandas.rpy.common as com
+from rpy2.robjects import Formula
 import rpy2.robjects as robjects
 
 
@@ -62,3 +63,31 @@ def test_converting_to_factors():
         elif typ == 'numeric':
             yield ok_, (not hasattr(rpy_out_df.rx2(col), 'nlevels'))
 
+
+def test_mixed_model():
+
+    test_data = DataFrame(
+        {
+            'colA': Series(randn(1, 5000).flatten() > 0),
+            'colB': Series(100 * randn(1, 5000).flatten()),
+            'colC': Series(100 + randn(1, 5000).flatten()),
+            'colD': Series(randn(1, 5000).flatten() > 0),
+            },
+        )
+
+    test_data['colA'] = test_data['colA'].map(str)
+    test_data['colD'] = test_data['colD'].map(str)
+
+    factor_cols = [('colA', 'True'),
+                   ('colD', 'True')]
+
+    rpy_test_df = com.convert_to_r_dataframe(test_data)
+
+    base_formula = Formula('colC ~ as.factor(colA) + colB')
+    rand_formula = Formula('~1|colD')
+
+    results = Rtools.R_linear_mixed_effects_model(rpy_test_df, base_formula, rand_formula)
+
+    yield ok_, ('tTable' in results), 'Did not have the tTable in the results'
+    yield ok_, ('as.factor(colA)True' in results['tTable'].index), 'Did not have the factor in the tTable'
+    yield ok_, ('colB' in results['tTable'].index), 'Did not have the variable in the tTable'

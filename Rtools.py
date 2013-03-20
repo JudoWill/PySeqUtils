@@ -43,3 +43,24 @@ return(inputframe)
         rpy_dataframe = relevel_fun(rpy_dataframe, col, ref)
 
     return rpy_dataframe
+
+
+def R_linear_mixed_effects_model(rpy_dataframe, model_eqn, random_eqn):
+    """Runs the lme R model using the input RPY dataframe, model equation and random effects.
+    """
+
+    _ = robjects.r('require(nlme)')
+    lme_model_func = robjects.r("""lmefunc <- function(data, eqn, reqn){
+lm1 <- lme(eqn, random = reqn, data = data, na.action = na.omit)
+return(summary(lm1))
+}""")
+
+    summary = lme_model_func(rpy_dataframe, model_eqn, random_eqn)
+    outdata = {}
+    for name in summary.names:
+        try:
+            outdata[name] = com.convert_robj(summary.rx2(name))
+        except:
+            pass
+
+    return outdata
