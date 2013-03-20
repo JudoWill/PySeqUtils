@@ -82,12 +82,14 @@ def test_mixed_model():
                    ('colD', 'True')]
 
     rpy_test_df = com.convert_to_r_dataframe(test_data)
+    rpy_test_df = Rtools.convert_columns_to_factors(rpy_test_df, factor_cols)
 
     base_formula = Formula('colC ~ as.factor(colA) + colB')
     rand_formula = Formula('~1|colD')
 
     results = Rtools.R_linear_mixed_effects_model(rpy_test_df, base_formula, rand_formula)
 
-    yield ok_, ('tTable' in results), 'Did not have the tTable in the results'
-    yield ok_, ('as.factor(colA)True' in results['tTable'].index), 'Did not have the factor in the tTable'
-    yield ok_, ('colB' in results['tTable'].index), 'Did not have the variable in the tTable'
+    print results['tTable']
+    ok_(('tTable' in results), 'Did not have the tTable in the results')
+    ok_(('as.factor(colA)False' in results['tTable'].index), 'Did not have the factor in the tTable')
+    ok_(('colB' in results['tTable'].index), 'Did not have the variable in the tTable')
