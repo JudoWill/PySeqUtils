@@ -45,11 +45,14 @@ return(inputframe)
     return rpy_dataframe
 
 
-def R_linear_mixed_effects_model(rpy_dataframe, model_eqn, random_eqn):
+def R_linear_mixed_effects_model(rpy_dataframe, model_eqn, random_eqn, suppress_warnings = True):
     """Runs the lme R model using the input RPY dataframe, model equation and random effects.
     """
 
     _ = robjects.r('require(nlme)')
+    if suppress_warnings:
+        robjects.r['options'](warn=-1)
+
     lme_model_func = robjects.r("""lmefunc <- function(data, eqn, reqn){
 lm1 <- lme(eqn, random = reqn, data = data, na.action = na.omit)
 return(summary(lm1))
