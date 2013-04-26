@@ -45,7 +45,7 @@ def take(num, iterable):
     return list(islice(iterable, num))
 
 
-def fasta_writer(handle, seqs):
+def fasta_writer(handle, seqs, single_line=False):
     """Writes (name, seq) pairs in fasta format
     """
 
@@ -53,6 +53,8 @@ def fasta_writer(handle, seqs):
     for name, seq in seqs:
         handle.write('>%s\n' % name)
         siter = iter(seq)
+        if single_line:
+            width = len(seq) + 1
         block = take(width, siter)
         while block:
             handle.write('%s\n' % ''.join(block))
