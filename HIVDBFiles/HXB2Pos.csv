@@ -1,0 +1,24 @@
+GeneName,CodingName,GenomeStart,GenomeStop
+5'LTR,5'LTR,1,634
+gag,p17,790,1186
+gag,p24,1186,1879
+gag,p2,1879,1921
+gag,p7,1921,2086
+gag,p1,2086,2134
+gag,p6,2134,2292
+pol,Pre-protease,2085,2253
+pol,protease,2253,2550
+pol,p51 RT,2550,3870
+pol,p15 Rnase,3870,4230
+pol,p31 integrase,4230,5096
+vif,Vif,5041,5619
+vpr,Vpr,5559,5850
+tat,Tat-1,5831,6045
+tat,Tat-2,8379,8469
+rev,Rev-1,5970,6045
+rev,Rev-2,8379,8653
+vpu,Vpu,6062,6310
+env,gp120,6225,7758
+env,gp41,7758,8795
+nef,Nef,8797,9417
+3'LTR,3'LTR,9086,9719
