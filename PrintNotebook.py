@@ -89,7 +89,7 @@ if __name__ == '__main__':
     notebook_base = in_path.rsplit(os.sep, 1)[1].rsplit('.', 1)[0]
     base_path = in_path.rsplit(os.sep, 1)[0]
     if args.output:
-        out_path = args.OutNotebook
+        out_path = args.output
     elif args.dropsync:
         out_path = '/home/will/Dropbox/Dropsync/IpythonNotebooks/' + notebook_base + '.pdf'
     else:
