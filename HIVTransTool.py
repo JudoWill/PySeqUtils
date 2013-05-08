@@ -4,11 +4,12 @@ import os
 from bs4 import BeautifulSoup
 from StringIO import StringIO
 from GeneralSeqTools import fasta_writer
-
+from itertools import chain, islice
 import csv
 import cookielib
 import mechanize
 import re
+from concurrent.futures import ThreadPoolExecutor
 
 
 def build_browser():
@@ -129,8 +130,39 @@ def map_seqs_to_ref(input_seqs):
     resp = br.submit()
 
     soup = BeautifulSoup(resp)
+    rows = []
     for name, seq, table in zip(yield_seq_names(soup), yield_query_seqs(soup), yield_seq_tables(soup)):
         for row in yield_row_vals(table, seq):
-            yield row
+            row['Name'] = name
+            rows.append(row)
+    return rows
 
+
+def take(iterable, chunk):
+    return list(islice(iterable, chunk))
+
+
+def yield_chunks(iterable, chunksize):
+
+    chunk = take(iterable, chunksize)
+    while chunk:
+        yield chunk
+        chunk = take(iterable, chunksize)
+
+
+def process_seqs(input_seqs, threads=5):
+
+    chunksize = 10
+    iter_seqs = iter(input_seqs)
+
+    if threads > 1:
+        ex = ThreadPoolExecutor(max_workers=threads)
+        process = ex.map
+    else:
+        process = map
+
+    chunk_iterable = yield_chunks(iter_seqs, chunksize)
+    res_iter = chain.from_iterable(process(map_seqs_to_ref, chunk_iterable))
+    for row in res_iter:
+        yield row
 
