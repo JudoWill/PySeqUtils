@@ -10,6 +10,8 @@ import cookielib
 import mechanize
 import re
 from concurrent.futures import ThreadPoolExecutor
+from collections import defaultdict
+from copy import deepcopy
 
 
 def build_browser():
@@ -160,8 +162,13 @@ def yield_chunks(iterable, chunksize):
         chunk = take(iterable, chunksize)
 
 
-def process_seqs(input_seqs, threads=5):
+def process_seqs(input_seqs, threads=5, extract_regions=False):
     """Calls map_seqs_to_ref in a multithreaded way."""
+
+    if extract_regions:
+        region_dict = load_region()
+    else:
+        region_dict = defaultdict(list)
 
     chunksize = 10
     iter_seqs = iter(input_seqs)
@@ -176,6 +183,53 @@ def process_seqs(input_seqs, threads=5):
     res_iter = chain.from_iterable(process(map_seqs_to_ref, chunk_iterable))
     for row in res_iter:
         yield row
+        for region_row in region_dict[row['RegionName']]:
+            nrow = region_linker(deepcopy(row), region_row)
+            if nrow:
+                yield nrow
+
+
+def region_linker(row, region_row):
+
+    region_name, start, end, is_aa = region_row
+
+    row['RegionName'] = region_name
+    if is_aa:
+        out_seq = extract_region(row['QueryAA'],
+                                 row['RegionAAStart'],
+                                 row['RegionAAStop'],
+                                 start, end)
+    else:
+        out_seq = extract_region(row['QueryNuc'],
+                                 row['QueryNucStart'],
+                                 row['QueryNucStop'],
+                                 start, end)
+    if (sum(1 for l in out_seq if l != '-')/len(out_seq)) > 0.5:
+        if is_aa:
+            row['QueryAA'] = out_seq
+        else:
+            row['QueryNuc'] = out_seq
+        reset_fields = ['QueryNucStart', 'QueryNucStop',
+                        'RegionNucStart', 'RegionNucStop',
+                        'RegionAAStart', 'RegionAAStop']
+        for f in reset_fields:
+            row[f] = None
+        return row
+    return None
+
+
+def load_region(path='/home/will/PySeqUtils/HIVDBFiles/HXB2RegionNames.csv'):
+
+    region_dict = defaultdict(list)
+    with open(path) as handle:
+        for row in csv.DictReader(handle):
+            region_dict[row['SourceName']].append((
+                row['RegionName'],
+                int(row['RegionStart'])-1,  # since the file is ONE-BASED
+                int(row['RegionEnd'])-1,
+                row['IsAA'] == 'True'
+            ))
+    return region_dict
 
 
 def extract_region(found_seq, found_start, found_stop, region_start, region_stop, fillval='-'):
