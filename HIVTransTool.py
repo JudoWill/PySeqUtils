@@ -13,6 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 def build_browser():
+    """Builds a browser which can 'fool' the LANL database."""
 
     br = mechanize.Browser()
 
@@ -36,10 +37,13 @@ def build_browser():
 
 
 def get_nums(instr):
+    """Returns a list of integers that occur in text."""
     return map(int, re.findall('\d+', instr))
 
 
 def is_seq_table(tab):
+    """Determines whether a BS4 object is a table which has sequence results."""
+
     wanted_str = 'Table of genomic regions touched by query sequence. (Protein translation of query shown in blue.)'
     check_str = ''.join(l for l in wanted_str if not l.isspace())
     frow = tab.tr.td
@@ -53,6 +57,7 @@ def is_seq_table(tab):
 
 
 def yield_query_seqs(soup):
+    """Returns the query sequence associate with a particular query."""
 
     for table in soup.findAll('table'):
         if table.form and table.form.input.attrs['name'] == 'PasteQuery':
@@ -60,6 +65,7 @@ def yield_query_seqs(soup):
 
 
 def yield_seq_tables(soup):
+    """Yields a table which has translated sequence information."""
 
     for table in soup.findAll('table'):
         if is_seq_table(table):
@@ -67,11 +73,14 @@ def yield_seq_tables(soup):
 
 
 def yield_seq_names(soup):
+    """Yields the query name from a LANL output."""
+
     for hd in soup.findAll('h3'):
         yield hd.text.replace('Sequence ', '')
 
 
 def yield_row_vals(table, nuc_seq):
+    """Processes a 'sequence table' from LANL and returns the contained regions."""
 
     is_seq_row = False
     for row in table.findAll('tr'):
@@ -143,6 +152,7 @@ def take(iterable, chunk):
 
 
 def yield_chunks(iterable, chunksize):
+    """Yields chunks of items from an iterable."""
 
     chunk = take(iterable, chunksize)
     while chunk:
@@ -151,6 +161,7 @@ def yield_chunks(iterable, chunksize):
 
 
 def process_seqs(input_seqs, threads=5):
+    """Calls map_seqs_to_ref in a multithreaded way."""
 
     chunksize = 10
     iter_seqs = iter(input_seqs)
