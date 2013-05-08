@@ -1,0 +1,6 @@
+SourceName,RegionName,RegionStart,RegionEnd
+gp120,V1,101,128
+gp120,V2,128,167
+gp120,V3,267,302
+gp120,V4,355,389
+gp120,V5,430,439
