@@ -177,3 +177,16 @@ def process_seqs(input_seqs, threads=5):
     for row in res_iter:
         yield row
 
+
+def extract_region(found_seq, found_start, found_stop, region_start, region_stop, fillval='-'):
+    """Extracts strings from the region. ZERO-BASED INDEXING!!"""
+
+    if found_start > region_start:
+        found_seq = fillval*abs(region_start - found_start) + found_seq
+        found_start = region_start
+    if found_stop < region_stop:
+        found_seq = found_seq + fillval*abs(found_stop - region_stop)
+
+    start = (region_start - found_start)
+    end = start + (region_stop - region_start)
+    return found_seq[start:end]
