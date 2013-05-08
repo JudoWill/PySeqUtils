@@ -3,8 +3,10 @@ __author__ = 'will'
 import os
 from bs4 import BeautifulSoup
 from StringIO import StringIO
-from GeneralSeqTools import fasta_writer
-from itertools import chain, islice
+from GeneralSeqTools import fasta_writer, fasta_reader
+from itertools import chain, islice, product
+from functools import partial
+import glob
 import csv
 import cookielib
 import mechanize
@@ -12,7 +14,8 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
 from copy import deepcopy
-
+from fileinput import FileInput
+import argparse
 
 def build_browser():
     """Builds a browser which can 'fool' the LANL database."""
@@ -244,3 +247,59 @@ def extract_region(found_seq, found_start, found_stop, region_start, region_stop
     start = (region_start - found_start)
     end = start + (region_stop - region_start)
     return found_seq[start:end]
+
+
+def write_row_to_fasta(out_fasta_template, seq_type, result_row):
+
+    fname = out_fasta_template % (seq_type, result_row['RegionName'])
+    field = 'QueryNuc' if seq_type == 'nuc' else 'QueryAA'
+    if result_row[field]:
+        with open(fname, 'a') as handle:
+            fasta_writer(handle, [(result_row['Name'], result_row[field])])
+
+
+def main(input_files, out_fasta_template, out_csv_file,
+         threads=5, extract_regions=True):
+
+    seq_iter = fasta_reader(FileInput(input_files))
+
+    if out_csv_file:
+        csv_handle = open(out_csv_file, 'w')
+        fields = ['Name', 'RegionName', 'QueryNucStart', 'QueryNucStop', 'QueryNuc',
+                  'RegionNucStart', 'RegionNucStop', 'RegionAAStart', 'RegionAAStop', 'QueryAA']
+        csv_writer = csv.DictWriter(csv_handle, fields, delimiter='\t')
+        csv_writer.writeheader()
+
+        csv_linker = lambda x: csv_writer.writerow(x)
+    else:
+        csv_linker = lambda x: x
+
+    write_funcs = [csv_linker,
+                   partial(write_row_to_fasta, out_fasta_template, 'nuc'),
+                   partial(write_row_to_fasta, out_fasta_template, 'aa'),
+                   ]
+
+    result_iter = process_seqs(seq_iter, threads=threads, extract_regions=extract_regions)
+
+    for row, func in product(result_iter, write_funcs):
+        func(row)
+
+
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description='A tool for extracting reading frames from HIV sequences')
+
+    parser.add_argument('infiles', type=str, help='Input files in Fasta format')
+    parser.add_argument('-o', type=str, required=True, help='Output template.')
+    parser.add_argument('-R', action='store_true', default=False, help='Extract internal regions like V3?')
+    parser.add_argument('-t', type=int, default=5, help='Number of threads to use when querying LANL. DONT BE A DICK!')
+
+    args = parser.parse_args()
+
+    infiles = glob.glob(args.infiles)
+    out_template = args.o + '_%s.%s.fasta'
+    out_csv = args.o + '.csv'
+
+    main(infiles, out_template, out_csv,
+         threads=args.t, extract_regions=args.R)
