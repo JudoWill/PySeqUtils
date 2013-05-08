@@ -1,6 +1,6 @@
-SourceName,RegionName,RegionStart,RegionEnd
-gp120,V1,101,128
-gp120,V2,128,167
-gp120,V3,267,302
-gp120,V4,355,389
-gp120,V5,430,439
+SourceName,RegionName,RegionStart,RegionEnd,IsAA
+gp120,V1,101,128,True
+gp120,V2,128,167,True
+gp120,V3,267,302,True
+gp120,V4,355,389,True
+gp120,V5,430,439,True
