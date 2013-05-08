@@ -4,7 +4,7 @@ import os
 from bs4 import BeautifulSoup
 from StringIO import StringIO
 from GeneralSeqTools import fasta_writer, fasta_reader
-from itertools import chain, islice, product
+from itertools import chain, islice, product, imap
 from functools import partial
 import glob
 import csv
@@ -16,6 +16,8 @@ from collections import defaultdict
 from copy import deepcopy
 from fileinput import FileInput
 import argparse
+import logging
+
 
 def build_browser():
     """Builds a browser which can 'fool' the LANL database."""
@@ -138,17 +140,23 @@ def map_seqs_to_ref(input_seqs):
 
     br = build_browser()
     br.open('http://www.hiv.lanl.gov/content/sequence/LOCATE/locate.html')
+    logging.info('Opened Browser to LANL')
 
     br.select_form(nr=1)
     br.form['SEQ'] = fasta_seqs
     resp = br.submit()
+    logging.info('Submitted Seqs to LANL')
 
     soup = BeautifulSoup(resp)
     rows = []
+    count = 0
     for name, seq, table in zip(yield_seq_names(soup), yield_query_seqs(soup), yield_seq_tables(soup)):
+        count += 1
         for row in yield_row_vals(table, seq):
             row['Name'] = name
             rows.append(row)
+
+    logging.info('LANL returned %i regions for %i patients' % (len(rows), count))
     return rows
 
 
@@ -165,7 +173,7 @@ def yield_chunks(iterable, chunksize):
         chunk = take(iterable, chunksize)
 
 
-def process_seqs(input_seqs, threads=5, extract_regions=False):
+def process_seqs(input_seqs, threads=5, extract_regions=False, known_names=None):
     """Calls map_seqs_to_ref in a multithreaded way."""
 
     if extract_regions:
@@ -173,18 +181,27 @@ def process_seqs(input_seqs, threads=5, extract_regions=False):
     else:
         region_dict = defaultdict(list)
 
-    chunksize = 10
+    chunksize = 100
     iter_seqs = iter(input_seqs)
 
     if threads > 1:
+        logging.warning('Started ThreadPool with %i workers' % threads)
         ex = ThreadPoolExecutor(max_workers=threads)
         process = ex.map
     else:
-        process = map
+        logging.warning('Running with NO THREADS!')
+        process = imap
 
     chunk_iterable = yield_chunks(iter_seqs, chunksize)
     res_iter = chain.from_iterable(process(map_seqs_to_ref, chunk_iterable))
+    name_count = 0
+    prev_name = None
     for row in res_iter:
+        if row['Name'] != prev_name:
+            prev_name = row['Name']
+            name_count += 1
+            if (name_count % 1000) == 0:
+                logging.info('Processed %i Sequences of %i' % (name_count, known_names))
         yield row
         for region_row in region_dict[row['RegionName']]:
             nrow = region_linker(deepcopy(row), region_row)
@@ -259,7 +276,7 @@ def write_row_to_fasta(out_fasta_template, seq_type, result_row):
 
 
 def main(input_files, out_fasta_template, out_csv_file,
-         threads=5, extract_regions=True):
+         threads=5, extract_regions=True, known_names=None):
 
     seq_iter = fasta_reader(FileInput(input_files))
 
@@ -279,7 +296,10 @@ def main(input_files, out_fasta_template, out_csv_file,
                    partial(write_row_to_fasta, out_fasta_template, 'aa'),
                    ]
 
-    result_iter = process_seqs(seq_iter, threads=threads, extract_regions=extract_regions)
+    result_iter = process_seqs(seq_iter,
+                               threads=threads,
+                               extract_regions=extract_regions,
+                               known_names=known_names)
 
     for row, func in product(result_iter, write_funcs):
         func(row)
@@ -294,12 +314,24 @@ if __name__ == '__main__':
     parser.add_argument('-o', type=str, required=True, help='Output template.')
     parser.add_argument('-R', action='store_true', default=False, help='Extract internal regions like V3?')
     parser.add_argument('-t', type=int, default=5, help='Number of threads to use when querying LANL. DONT BE A DICK!')
+    parser.add_argument('-q', action='store_true', default=False, help='Be Quiet!')
 
     args = parser.parse_args()
+
+    fmt = '%(threadName)s: %(levelname)s %(asctime)s | %(message)s'
+    if args.q:
+        logging.basicConfig(level=logging.WARNING, format=fmt)
+    else:
+        logging.basicConfig(level=logging.DEBUG, format=fmt)
 
     infiles = glob.glob(args.infiles)
     out_template = args.o + '_%s.%s.fasta'
     out_csv = args.o + '.csv'
 
+    logging.info('Calculating the number of seqs in %s' % ','.join(infiles))
+    known_names = sum(line.startswith('>') for line in FileInput(infiles))
+    logging.warning('Found %i sequences to process' % known_names)
+    logging.warning('Starting!')
     main(infiles, out_template, out_csv,
-         threads=args.t, extract_regions=args.R)
+         threads=args.t, extract_regions=args.R, known_names=known_names)
+    logging.warning('Finished!')
