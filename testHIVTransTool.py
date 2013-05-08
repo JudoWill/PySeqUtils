@@ -17,7 +17,7 @@ def test_known_mappings():
     with open('TestData/testSeqs.fasta') as handle:
         test_seqs = list(fasta_reader(handle))
 
-    for row, crow in zip(HIVTransTool.map_seqs_to_ref(test_seqs), cor_res):
+    for row, crow in zip(HIVTransTool.process_seqs(test_seqs, extract_regions=True), cor_res):
         for f in crow.keys():
             if row[f] is None:
                 row[f] = ''
