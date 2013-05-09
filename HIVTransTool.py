@@ -162,7 +162,6 @@ def yield_row_vals(table, nuc_seq):
 def map_seqs_to_ref(input_seqs):
     """Maps a set of (name, seq) pairs to HXB2 using LANL"""
 
-    time.sleep(5)
     base_seqs = StringIO()
     fasta_writer(base_seqs, input_seqs)
     base_seqs.seek(0)
@@ -175,7 +174,7 @@ def map_seqs_to_ref(input_seqs):
     br.select_form(nr=1)
     br.form['SEQ'] = fasta_seqs
     resp = br.submit()
-    logging.debug('Submitted Seqs to LANL')
+    logging.info('Submitted Seqs to LANL')
 
     soup = BeautifulSoup(resp)
     rows = []
@@ -186,7 +185,7 @@ def map_seqs_to_ref(input_seqs):
             row['Name'] = name
             rows.append(row)
 
-    logging.debug('LANL returned %i regions for %i patients' % (len(rows), count))
+    logging.info('LANL returned %i regions for %i patients' % (len(rows), count))
     return rows
 
 
@@ -217,8 +216,10 @@ def process_seqs(input_seqs, threads='celery', extract_regions=False, known_name
 
     if threads == 'celery':
         logging.warning('Started celery job!')
-        job = group([map_seqs_to_ref.subtask((chunk,)) for chunk in chunk_iterable])
-        res = job.apply_async()
+        jobs = [map_seqs_to_ref.subtask((chunk,)) for chunk in chunk_iterable]
+        job = group(jobs)
+        print len(jobs), 'jobs'
+        res = job.apply_async(queue='HIVTransTool')
         res_iter = chain.from_iterable(res.iterate())
 
     elif threads > 1:
@@ -235,8 +236,9 @@ def process_seqs(input_seqs, threads='celery', extract_regions=False, known_name
         if row['Name'] != prev_name:
             prev_name = row['Name']
             name_count += 1
-            if (name_count % 1000) == 0:
-                logging.warning('Processed %i Sequences of %i' % (name_count, known_names))
+            if (name_count < 5) or (name_count % 1000) == 0:
+                print 'Processed %i Sequences of %i' % (name_count, known_names)
+                #logging.warning()
         yield row
         for region_row in region_dict[row['RegionName']]:
             nrow = region_linker(deepcopy(row), region_row)
@@ -259,6 +261,8 @@ def region_linker(row, region_row):
                                  row['QueryNucStart'],
                                  row['QueryNucStop'],
                                  start, end)
+    if len(out_seq) == 0:
+        return None
     if (sum(1 for l in out_seq if l != '-')/len(out_seq)) > 0.5:
         if is_aa:
             row['QueryAA'] = out_seq
@@ -357,7 +361,7 @@ if __name__ == '__main__':
     if args.q:
         logging.basicConfig(level=logging.WARNING, format=fmt)
     else:
-        logging.basicConfig(level=logging.DEBUG, format=fmt)
+        logging.basicConfig(level=logging.INFO, format=fmt)
 
     infiles = glob.glob(args.infiles)
     out_template = args.o + '_%s.%s.fasta'
