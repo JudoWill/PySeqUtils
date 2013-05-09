@@ -11,6 +11,18 @@ import shutil
 from GeneralSeqTools import write_nexus_alignment
 import csv
 from StringIO import StringIO
+from dendropy.treecalc import PatristicDistanceMatrix
+from itertools import combinations
+from collections import defaultdict
+from scipy.stats import ttest_ind
+from random import shuffle
+import numpy as np
+
+from celery import Celery
+from celery import group
+
+celery = Celery()
+celery.config_from_object('celeryconfig')
 
 
 @contextlib.contextmanager
@@ -25,7 +37,8 @@ def tmp_directory(*args, **kwargs):
     finally:
         shutil.rmtree(path)
 
-
+@celery.task(name='TreeingTools.make_mrbayes_trees',
+             queue='long-running')
 def make_mrbayes_trees(input_seqs, mrbayes_kwargs=None, is_aa=True):
     """Takes an ALIGNED set of sequences and generates a phylogenetic tree using MrBayes.
     """
@@ -117,7 +130,8 @@ def bats_format_nexus(treeset, outhandle, trop_dict):
         outhandle.write('tree tree_%i [&R] %s;\n' % (num, tstr))
     outhandle.write('end;\n')
 
-
+@celery.task(name='TreeingTools.run_bats',
+             queue='long-running')
 def run_bats(treeset, trop_dict, nreps=5000):
     """Runs the BatS analysis on a treeset.
     """
@@ -137,3 +151,52 @@ def run_bats(treeset, trop_dict, nreps=5000):
             headers = line.strip().split('\t')
             break
     return list(csv.DictReader(handle, fieldnames=headers, delimiter='\t'))[:-2]
+
+@celery.task(name='TreeingTools.get_pairwise_distances')
+def get_pairwise_distances(tree):
+    """Returns a dict of pairwise distances."""
+
+    taxons = tree.taxon_set
+    pdm = PatristicDistanceMatrix(tree)
+    pdm.calc()
+    dmat = {}
+    for p1, p2 in combinations(taxons, 2):
+        d = pdm(p1, p2)
+        dmat[(p1.label, p2.label)] = d
+        dmat[(p2.label, p1.label)] = d
+
+    return dmat
+
+@celery.task(name='TreeingTools.check_distance_pvals')
+def check_distance_pvals(dist_dict, group_dict, group_frac=0.5, nreps=500):
+
+    groups = sorted(set(group_dict.values()))
+    assert len(groups) == 2
+
+    group_vals = defaultdict(list)
+
+    for (key1, key2), dist in dist_dict.items():
+        if group_dict[key1] == group_dict[key2]:
+            group_vals[group_dict[key1]].append(dist)
+
+    _, raw_pval = ttest_ind(*group_vals.values())
+
+    nitems = int(group_frac*min(map(len, group_vals.values())))
+    cor_vals = []
+    for _ in range(nreps):
+        [shuffle(items) for items in group_vals.values()]
+        _, pval = ttest_ind(*[items[:nitems] for items in group_vals.values()])
+        cor_vals.append(pval)
+
+    odict = {
+        'RawPval': raw_pval,
+        'AdjPval': np.mean(cor_vals),
+        'Group1Name': groups[0],
+        'Group2Name': groups[1],
+        'Group1Mean': np.mean(group_vals[groups[0]]),
+        'Group2Mean': np.mean(group_vals[groups[1]]),
+        'Group1Std': np.std(group_vals[groups[0]]),
+        'Group2Std': np.std(group_vals[groups[1]]),
+        }
+
+    return odict
