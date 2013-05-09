@@ -37,6 +37,13 @@ from copy import deepcopy
 from fileinput import FileInput
 import argparse
 import logging
+import time
+
+from celery import Celery
+from celery import group
+
+celery = Celery()
+celery.config_from_object('celeryconfig')
 
 
 def build_browser():
@@ -150,10 +157,12 @@ def yield_row_vals(table, nuc_seq):
             }
             yield odict
 
-
+@celery.task(name='HIVTransTool.map_seqs_to_ref',
+             queue='HIVTransTool')
 def map_seqs_to_ref(input_seqs):
     """Maps a set of (name, seq) pairs to HXB2 using LANL"""
 
+    time.sleep(5)
     base_seqs = StringIO()
     fasta_writer(base_seqs, input_seqs)
     base_seqs.seek(0)
@@ -161,12 +170,12 @@ def map_seqs_to_ref(input_seqs):
 
     br = build_browser()
     br.open('http://www.hiv.lanl.gov/content/sequence/LOCATE/locate.html')
-    logging.info('Opened Browser to LANL')
+    logging.debug('Opened Browser to LANL')
 
     br.select_form(nr=1)
     br.form['SEQ'] = fasta_seqs
     resp = br.submit()
-    logging.info('Submitted Seqs to LANL')
+    logging.debug('Submitted Seqs to LANL')
 
     soup = BeautifulSoup(resp)
     rows = []
@@ -177,7 +186,7 @@ def map_seqs_to_ref(input_seqs):
             row['Name'] = name
             rows.append(row)
 
-    logging.info('LANL returned %i regions for %i patients' % (len(rows), count))
+    logging.debug('LANL returned %i regions for %i patients' % (len(rows), count))
     return rows
 
 
@@ -194,7 +203,7 @@ def yield_chunks(iterable, chunksize):
         chunk = take(iterable, chunksize)
 
 
-def process_seqs(input_seqs, threads=5, extract_regions=False, known_names=None):
+def process_seqs(input_seqs, threads='celery', extract_regions=False, known_names=None):
     """Calls map_seqs_to_ref in a multithreaded way."""
 
     if extract_regions:
@@ -202,19 +211,24 @@ def process_seqs(input_seqs, threads=5, extract_regions=False, known_names=None)
     else:
         region_dict = defaultdict(list)
 
-    chunksize = 100
+    chunksize = 50
     iter_seqs = iter(input_seqs)
+    chunk_iterable = yield_chunks(iter_seqs, chunksize)
 
-    if threads > 1:
+    if threads == 'celery':
+        logging.warning('Started celery job!')
+        job = group([map_seqs_to_ref.subtask((chunk,)) for chunk in chunk_iterable])
+        res = job.apply_async()
+        res_iter = chain.from_iterable(res.iterate())
+
+    elif threads > 1:
         logging.warning('Started ThreadPool with %i workers' % threads)
         ex = ThreadPoolExecutor(max_workers=threads)
-        process = ex.map
+        res_iter = chain.from_iterable(ex.map(map_seqs_to_ref, chunk_iterable))
     else:
         logging.warning('Running with NO THREADS!')
-        process = imap
+        res_iter = chain.from_iterable(imap(map_seqs_to_ref, chunk_iterable))
 
-    chunk_iterable = yield_chunks(iter_seqs, chunksize)
-    res_iter = chain.from_iterable(process(map_seqs_to_ref, chunk_iterable))
     name_count = 0
     prev_name = None
     for row in res_iter:
@@ -334,6 +348,7 @@ if __name__ == '__main__':
     parser.add_argument('-o', type=str, required=True, help='Output template.')
     parser.add_argument('-R', action='store_true', default=False, help='Extract internal regions like V3?')
     parser.add_argument('-t', type=int, default=5, help='Number of threads to use when querying LANL. DONT BE A DICK!')
+    parser.add_argument('-c', action='store_true', default=False, help='Use celery to manage multiprocessing.')
     parser.add_argument('-q', action='store_true', default=False, help='Be Quiet!')
 
     args = parser.parse_args()
@@ -352,6 +367,7 @@ if __name__ == '__main__':
     known_names = sum(line.startswith('>') for line in FileInput(infiles))
     logging.warning('Found %i sequences to process' % known_names)
     logging.warning('Starting!')
+    nthreads = 'celery' if args.c else args.t
     main(infiles, out_template, out_csv,
-         threads=args.t, extract_regions=args.R, known_names=known_names)
+         threads=nthreads, extract_regions=args.R, known_names=known_names)
     logging.warning('Finished!')
