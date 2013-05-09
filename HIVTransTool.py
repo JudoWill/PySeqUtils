@@ -1,6 +1,26 @@
+""" This tool is for locatating and translating HIV sequences from
+ arbitrary locations. It uses multiprocesing to query the LANL
+ Sequence Locator tool (http://www.hiv.lanl.gov/content/sequence/LOCATE/locate.html)
+ and retrieve the results.
+
+ This tool can either be a library or a command-line tool. If using
+ as a command line tool then something like:
+
+  python HIVTransTool.py -o /path/to/output path/to/input
+
+ should do everything you need. To use as a library you should
+ import the 'process_seqs' function since it takes care of the
+ multiprocesing.
+
+  from HIVTransTool import process_seqs
+  for row in process_seqs(input_seqs, threads=5):
+    print row
+
+ input_seqs should be an iterable of (name, seq) tuples.
+
+"""
 from __future__ import division
 __author__ = 'will'
-import os
 from bs4 import BeautifulSoup
 from StringIO import StringIO
 from GeneralSeqTools import fasta_writer, fasta_reader
@@ -90,6 +110,7 @@ def yield_row_vals(table, nuc_seq):
     """Processes a 'sequence table' from LANL and returns the contained regions."""
 
     is_seq_row = False
+    prot = None
     for row in table.findAll('tr'):
         cols = list(row.findAll('td'))
         #print cols
@@ -201,7 +222,7 @@ def process_seqs(input_seqs, threads=5, extract_regions=False, known_names=None)
             prev_name = row['Name']
             name_count += 1
             if (name_count % 1000) == 0:
-                logging.info('Processed %i Sequences of %i' % (name_count, known_names))
+                logging.warning('Processed %i Sequences of %i' % (name_count, known_names))
         yield row
         for region_row in region_dict[row['RegionName']]:
             nrow = region_linker(deepcopy(row), region_row)
@@ -303,7 +324,6 @@ def main(input_files, out_fasta_template, out_csv_file,
 
     for row, func in product(result_iter, write_funcs):
         func(row)
-
 
 
 if __name__ == '__main__':
