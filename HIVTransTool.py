@@ -21,6 +21,7 @@
 """
 from __future__ import division
 __author__ = 'will'
+import os.path
 from bs4 import BeautifulSoup
 from StringIO import StringIO
 from GeneralSeqTools import fasta_writer, fasta_reader
@@ -305,43 +306,31 @@ def extract_region(found_seq, found_start, found_stop, region_start, region_stop
     return found_seq[start:end]
 
 
-def write_row_to_fasta(out_fasta_template, seq_type, result_row):
-
-    fname = out_fasta_template % (seq_type, result_row['RegionName'])
-    field = 'QueryNuc' if seq_type == 'nuc' else 'QueryAA'
-    if result_row[field]:
-        with open(fname, 'a') as handle:
-            fasta_writer(handle, [(result_row['Name'], result_row[field])])
-
-
-def main(input_files, out_fasta_template, out_csv_file,
+def main(input_files, out_csv_file,
          threads=5, extract_regions=True, known_names=None):
 
     seq_iter = fasta_reader(FileInput(input_files))
+    found_names = set()
+    need_header = True
+    if os.path.exists(out_csv_file):
+        need_header = False
+        with open(out_csv_file) as handle:
+            for row in csv.DictReader(handle, delimiter='\t'):
+                found_names.add(row['Name'])
 
-    if out_csv_file:
-        csv_handle = open(out_csv_file, 'w')
-        fields = ['Name', 'RegionName', 'QueryNucStart', 'QueryNucStop', 'QueryNuc',
-                  'RegionNucStart', 'RegionNucStop', 'RegionAAStart', 'RegionAAStop', 'QueryAA']
-        csv_writer = csv.DictWriter(csv_handle, fields, delimiter='\t')
+    csv_handle = open(out_csv_file, 'a')
+    fields = ['Name', 'RegionName', 'QueryNucStart', 'QueryNucStop', 'QueryNuc',
+              'RegionNucStart', 'RegionNucStop', 'RegionAAStart', 'RegionAAStop', 'QueryAA']
+    csv_writer = csv.DictWriter(csv_handle, fields, delimiter='\t')
+    if need_header:
         csv_writer.writeheader()
 
-        csv_linker = lambda x: csv_writer.writerow(x)
-    else:
-        csv_linker = lambda x: x
-
-    write_funcs = [csv_linker,
-                   partial(write_row_to_fasta, out_fasta_template, 'nuc'),
-                   partial(write_row_to_fasta, out_fasta_template, 'aa'),
-                   ]
-
-    result_iter = process_seqs(seq_iter,
+    wanted_seqs = ((name, seq) for name, seq in seq_iter if name not in found_names)
+    result_iter = process_seqs(wanted_seqs,
                                threads=threads,
                                extract_regions=extract_regions,
                                known_names=known_names)
-
-    for row, func in product(result_iter, write_funcs):
-        func(row)
+    csv_writer.writerows(result_iter)
 
 
 if __name__ == '__main__':
@@ -364,14 +353,13 @@ if __name__ == '__main__':
         logging.basicConfig(level=logging.INFO, format=fmt)
 
     infiles = glob.glob(args.infiles)
-    out_template = args.o + '_%s.%s.fasta'
-    out_csv = args.o + '.csv'
+    out_csv = args.o
 
     logging.info('Calculating the number of seqs in %s' % ','.join(infiles))
     known_names = sum(line.startswith('>') for line in FileInput(infiles))
     logging.warning('Found %i sequences to process' % known_names)
     logging.warning('Starting!')
     nthreads = 'celery' if args.c else args.t
-    main(infiles, out_template, out_csv,
+    main(infiles, out_csv,
          threads=nthreads, extract_regions=args.R, known_names=known_names)
     logging.warning('Finished!')
