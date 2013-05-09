@@ -2,14 +2,22 @@ from kombu import Exchange, Queue
 BROKER_URL = 'amqp://'
 CELERY_RESULT_BACKEND = 'amqp://'
 
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'pickle'
+CELERY_RESULT_SERIALIZER = 'pickle'
+
+#BROKER_HEARTBEAT = 10
 
 CELERY_IMPORTS = ('HIVTransTool',
                   'TreeingTools',)
 
+CELERY_MAX_CACHED_RESULTS = 100000
+CELERY_TRACK_STARTED = True
+CELERYD_MAX_TASKS_PER_CHILD = 100
+#CELERY_SEND_EVENTS = True
+#CELERYD_HIJACK_ROOT_LOGGER = False
+
 CELERY_QUEUES = [Queue('HIVTransTool'),
-                 Queue('default'),
+                 Queue('celery'),
                  Queue('long-running')]
 
 CELERY_ANNOTATIONS = {
