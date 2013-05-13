@@ -39,6 +39,7 @@ from fileinput import FileInput
 import argparse
 import logging
 import time
+from httplib import IncompleteRead
 
 from celery import Celery
 from celery import group
@@ -160,7 +161,7 @@ def yield_row_vals(table, nuc_seq):
 
 @celery.task(name='HIVTransTool.map_seqs_to_ref',
              queue='HIVTransTool')
-def map_seqs_to_ref(input_seqs):
+def map_seqs_to_ref(input_seqs, retry=0):
     """Maps a set of (name, seq) pairs to HXB2 using LANL"""
 
     base_seqs = StringIO()
@@ -177,7 +178,12 @@ def map_seqs_to_ref(input_seqs):
     resp = br.submit()
     logging.info('Submitted Seqs to LANL')
 
-    soup = BeautifulSoup(resp)
+    try:
+        soup = BeautifulSoup(resp)
+    except IncompleteRead:
+        if retry > 5:
+            raise ValueError
+        return map_seqs_to_ref(input_seqs, retry=retry+1)
     rows = []
     count = 0
     for name, seq, table in zip(yield_seq_names(soup), yield_query_seqs(soup), yield_seq_tables(soup)):
@@ -330,7 +336,10 @@ def main(input_files, out_csv_file,
                                threads=threads,
                                extract_regions=extract_regions,
                                known_names=known_names)
-    csv_writer.writerows(result_iter)
+    for chunk in yield_chunks(result_iter, 1000):
+        print chunk[0]
+        csv_writer.writerows(chunk)
+
 
 
 if __name__ == '__main__':
