@@ -41,11 +41,7 @@ import logging
 import time
 from httplib import IncompleteRead
 
-from celery import Celery
-from celery import group
 
-celery = Celery()
-celery.config_from_object('celeryconfig')
 
 
 def build_browser():
@@ -159,8 +155,7 @@ def yield_row_vals(table, nuc_seq):
             }
             yield odict
 
-@celery.task(name='HIVTransTool.map_seqs_to_ref',
-             queue='HIVTransTool')
+
 def map_seqs_to_ref(input_seqs, retry=0):
     """Maps a set of (name, seq) pairs to HXB2 using LANL"""
 
@@ -209,7 +204,7 @@ def yield_chunks(iterable, chunksize):
         chunk = take(iterable, chunksize)
 
 
-def process_seqs(input_seqs, threads='celery', extract_regions=False, known_names=None):
+def process_seqs(input_seqs, threads=5, extract_regions=False, known_names=None):
     """Calls map_seqs_to_ref in a multithreaded way."""
 
     if extract_regions:
@@ -221,15 +216,7 @@ def process_seqs(input_seqs, threads='celery', extract_regions=False, known_name
     iter_seqs = iter(input_seqs)
     chunk_iterable = yield_chunks(iter_seqs, chunksize)
 
-    if threads == 'celery':
-        logging.warning('Started celery job!')
-        jobs = [map_seqs_to_ref.subtask((chunk,)) for chunk in chunk_iterable]
-        job = group(jobs)
-        print len(jobs), 'jobs'
-        res = job.apply_async(queue='HIVTransTool')
-        res_iter = chain.from_iterable(res.iterate())
-
-    elif threads > 1:
+    if threads > 1:
         logging.warning('Started ThreadPool with %i workers' % threads)
         ex = ThreadPoolExecutor(max_workers=threads)
         res_iter = chain.from_iterable(ex.map(map_seqs_to_ref, chunk_iterable))
@@ -350,7 +337,6 @@ if __name__ == '__main__':
     parser.add_argument('-o', type=str, required=True, help='Output template.')
     parser.add_argument('-R', action='store_true', default=False, help='Extract internal regions like V3?')
     parser.add_argument('-t', type=int, default=5, help='Number of threads to use when querying LANL. DONT BE A DICK!')
-    parser.add_argument('-c', action='store_true', default=False, help='Use celery to manage multiprocessing.')
     parser.add_argument('-q', action='store_true', default=False, help='Be Quiet!')
 
     args = parser.parse_args()
@@ -368,7 +354,6 @@ if __name__ == '__main__':
     known_names = sum(line.startswith('>') for line in FileInput(infiles))
     logging.warning('Found %i sequences to process' % known_names)
     logging.warning('Starting!')
-    nthreads = 'celery' if args.c else args.t
     main(infiles, out_csv,
          threads=nthreads, extract_regions=args.R, known_names=known_names)
     logging.warning('Finished!')

@@ -196,7 +196,7 @@ def check_distance_pvals(dist_dict, group_dict, group_frac=0.5, nreps=500):
         'Group1Mean': np.mean(group_vals[groups[0]]),
         'Group2Mean': np.mean(group_vals[groups[1]]),
         'Group1Std': np.std(group_vals[groups[0]]),
-        'Group2Std': np.std(group_vals[groups[1]]),
-        }
+        'Group2Std': np.std(group_vals[groups[1]])
+    }
 
     return odict
