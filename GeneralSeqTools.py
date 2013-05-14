@@ -1,16 +1,67 @@
 __author__ = 'will'
 from itertools import groupby, islice, imap
-import subprocess # import check_output
+import subprocess  # import check_output
 from StringIO import StringIO
 from tempfile import NamedTemporaryFile as NTF
 from concurrent.futures import ThreadPoolExecutor
 import shlex
 import os
+import csv
 from pandas import DataFrame
 from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import IUPAC
+from mechanize import Browser
+from collections import defaultdict
+
+
+def yield_chunks(iterable, chunksize):
+
+    chunk = take(chunksize, iterable)
+    while chunk:
+        yield chunk
+        chunk = take(chunksize, iterable)
+
+
+def WebPSSM_V3_series(input_V3_seqs, threads=20):
+
+    if threads:
+        executor = ThreadPoolExecutor(max_workers=threads)
+        processor = executor.map
+    else:
+        processor = imap
+
+    chunk_iter = yield_chunks(iter(input_V3_seqs), 30)
+    scores = defaultdict(list)
+    #fields = ['name','score','pred','x4.pct','r5.pct','geno','pos.chg','net.chg','percentile']
+    for num, res in enumerate(processor(WebPSSM_V3_fasta, chunk_iter)):
+        if num % 100 == 0:
+            print len(scores), 'already completed'
+        for row in res:
+            scores[row[0]].append(float(row[1]))
+
+    for name, vals in scores.items():
+        yield name, sum(vals)/len(vals)
+
+
+def WebPSSM_V3_fasta(V3_tuple):
+
+    V3_fasta = ''
+    for name, seq in V3_tuple:
+        V3_fasta += '>%s\n%s\n' % (name, seq)
+    baseurl = 'http://indra.mullins.microbiol.washington.edu/webpssm/'
+    br = Browser()
+    br.open(baseurl)
+    br.select_form(nr=0)
+    br['seqs'] = V3_fasta
+    try:
+        br.submit()
+    except:
+        return []
+    link = br.find_link(text='here')
+    out = br.follow_link(link).read()
+    return list(csv.reader(StringIO(out), delimiter='\t'))[2:]
 
 
 def write_nexus_alignment(input_seqs, handle, is_aa=True):
