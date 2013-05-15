@@ -17,12 +17,77 @@ from collections import defaultdict
 from scipy.stats import ttest_ind
 from random import shuffle
 import numpy as np
+import logging
+from types import ListType, StringType
 
-from celery import Celery
+from pymongo import MongoClient
+
+from celery import Celery, subtask
 from celery import group
 
 celery = Celery()
 celery.config_from_object('celeryconfig')
+
+
+
+@celery.task(name='TreeingTools.write_results_to_mongo',
+             queue='writingqueue')
+def write_results_to_mongo(result, **kwargs):
+    #, result_type=None, database=None, extra_fields=None
+
+    if type(result) == ListType:
+        result_list = list(result)
+    else:
+        result_list = [result]
+
+    client = MongoClient()
+    db = client['new_test_db'].results
+    for res in result_list:
+        if kwargs['extra_fields']:
+            res.update(kwargs['extra_fields'])
+        res.pop(None, None)
+        res['ResultType'] = kwargs['result_type']
+        db.insert(res)
+
+
+@celery.task(name='TreeingTools.process_region',
+             queue='base')
+def process_region(input_seqs, trop_dict, basename, database=None, mrbayes_args={}, extra_fields={}):
+
+    try:
+        if os.path.exists(basename + '.tree'):
+            return
+        handle = open(basename + '.tree', 'w')
+        logging.info('Making Tree ' + str(extra_fields))
+        contree, treeset = make_mrbayes_trees(input_seqs, **mrbayes_args)
+        contree.write_to_stream(handle, 'nexus')
+        treeset.write_to_path(basename + '.treeset', 'nexus')
+    except IOError:
+        return
+    except OSError:
+        return
+
+    bats_write_subtask = subtask('TreeingTools.write_results_to_mongo', (), {
+        'result_type': 'BATS',
+        'extra_fields': extra_fields,
+        'database': database
+    })
+
+    logging.info('Starting BATS ' + str(extra_fields))
+    run_bats.apply_async(args=(basename + '.treeset', trop_dict),
+                         kwargs = {'nreps': 50}, link = bats_write_subtask)
+
+    benj_write_subtask = subtask('TreeingTools.write_results_to_mongo', (), {
+        'result_type': 'Benj',
+        'extra_fields': extra_fields,
+        'database': database
+    })
+
+    dmat = get_pairwise_distances(contree)
+    logging.info('Starting Dist Pvals ' + str(extra_fields))
+    check_distance_pvals.apply_async(args=(dmat, trop_dict),
+                                     kwargs = {'nreps': 500}, link = benj_write_subtask)
+
 
 
 @contextlib.contextmanager
@@ -35,7 +100,21 @@ def tmp_directory(*args, **kwargs):
     try:
         yield path + '/'
     finally:
-        shutil.rmtree(path)
+        pass
+        #shutil.rmtree(path)
+
+
+def clean_sequences(input_seqs, is_aa=True):
+
+    if is_aa:
+        allowed = set('RHKDESTNQCUGPAVILMFYW-')
+    else:
+        allowed = set('ACGT-')
+
+    for name, seq in input_seqs:
+        nseq = ''.join(l if l.upper() in allowed else '-' for l in seq)
+        yield name, nseq
+
 
 @celery.task(name='TreeingTools.make_mrbayes_trees',
              queue='long-running')
@@ -43,6 +122,7 @@ def make_mrbayes_trees(input_seqs, mrbayes_kwargs=None, is_aa=True):
     """Takes an ALIGNED set of sequences and generates a phylogenetic tree using MrBayes.
     """
 
+    cleaned_seqs = clean_sequences(input_seqs, is_aa=is_aa)
     with tmp_directory() as tmpdir:
         align_file = tmpdir + 'seqalign.nxs'
         mrbayes_cmd_file = tmpdir + 'analysis.nxs'
@@ -50,7 +130,7 @@ def make_mrbayes_trees(input_seqs, mrbayes_kwargs=None, is_aa=True):
         cons_file = tmpdir + 'seqalign.nxs.con.tre'
 
         with open(align_file, 'w') as handle:
-            write_nexus_alignment(input_seqs, handle, is_aa=is_aa)
+            write_nexus_alignment(cleaned_seqs, handle, is_aa=is_aa)
 
         with open(mrbayes_cmd_file, 'w') as handle:
             if mrbayes_kwargs is None:
@@ -70,7 +150,7 @@ def make_mrbayes_trees(input_seqs, mrbayes_kwargs=None, is_aa=True):
 
 
 def generate_mrbayes_nexus(alignment_path, output_path,
-                           nchains=3, ngen=50000, samplefreq=1000,
+                           nchains=3, ngen=5000, samplefreq=1000,
                            is_aa=True):
     """Generates the NEXUS command to control MrBayes in the form that I usually use. This will likely be expanded as I
      have to include more issues.
@@ -136,13 +216,17 @@ def run_bats(treeset, trop_dict, nreps=5000):
     """Runs the BatS analysis on a treeset.
     """
 
+    if type(treeset) is StringType:
+        treeset = dendropy.TreeList.get_from_path(treeset, 'nexus')
     nstates = len(set(trop_dict.values()))
     with NTF() as handle:
         bats_format_nexus(treeset, handle, trop_dict)
         handle.flush()
         os.fsync(handle)
         cmd = 'java -jar /home/will/BaTS_beta_build2.jar single %s %i %i'
+        logging.info('Running BATS')
         out = check_output(shlex.split(cmd % (handle.name, nreps, nstates)))
+        logging.info('Sucessful BATS')
 
     handle = StringIO(out)
     headers = []

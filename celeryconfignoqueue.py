@@ -5,6 +5,7 @@ CELERY_RESULT_BACKEND = 'amqp://'
 CELERY_TASK_SERIALIZER = 'pickle'
 CELERY_RESULT_SERIALIZER = 'pickle'
 
+BROKER_HEARTBEAT = 10
 
 CELERY_IMPORTS = ('HIVTransTool',
                   'TreeingTools',
@@ -18,14 +19,6 @@ CELERY_SEND_EVENTS = True
 CELERYD_HIJACK_ROOT_LOGGER = False
 CELERYD_PREFETCH_MULTIPLIER = 1
 CELERY_ACKS_LATE = True
-
-CELERY_QUEUES = [Queue('HIVTransTool'),
-                 Queue('celery'),
-                 Queue('long-running'),
-                 Queue('base'),
-                 Queue('HIVSeqDBManagement'),
-                 Queue('writingqueue'),
-                 ]
 
 
 CELERY_ANNOTATIONS = {
