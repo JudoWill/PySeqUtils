@@ -101,7 +101,7 @@ def tmp_directory(*args, **kwargs):
         yield path + '/'
     finally:
         pass
-        #shutil.rmtree(path)
+        shutil.rmtree(path)
 
 
 def clean_sequences(input_seqs, is_aa=True):
@@ -150,7 +150,7 @@ def make_mrbayes_trees(input_seqs, mrbayes_kwargs=None, is_aa=True):
 
 
 def generate_mrbayes_nexus(alignment_path, output_path,
-                           nchains=3, ngen=5000, samplefreq=1000,
+                           nchains=1, ngen=5000, samplefreq=1000,
                            is_aa=True):
     """Generates the NEXUS command to control MrBayes in the form that I usually use. This will likely be expanded as I
      have to include more issues.
@@ -160,7 +160,7 @@ def generate_mrbayes_nexus(alignment_path, output_path,
    set autoclose=yes nowarn=yes;
    execute %(align)s;
    %(model)s;
-   mcmc nchains = %(nchains)i ngen = %(ngen)i samplefreq=%(samplefreq)i diagnfreq=100000 printfreq=100000 file=%(out)s;
+   mcmc nchains = %(nchains)i ngen = %(ngen)i samplefreq=%(samplefreq)i file=%(out)s;
    sump;
    sumt;
 end;"""

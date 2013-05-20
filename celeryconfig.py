@@ -1,5 +1,12 @@
 from kombu import Exchange, Queue
-BROKER_URL = 'amqp://'
+
+#BROKER_HOST = "localhost"
+#BROKER_PORT = 5672
+#BROKER_USER = "will"
+#BROKER_PASSWORD = "dampier"
+#BROKER_VHOST = "pythontasks"
+
+BROKER_URL = 'amqp://will:dampier@localhost:5672/'
 CELERY_RESULT_BACKEND = 'amqp://'
 
 CELERY_TASK_SERIALIZER = 'pickle'
@@ -29,7 +36,11 @@ CELERY_QUEUES = [Queue('HIVTransTool'),
 
 
 CELERY_ANNOTATIONS = {
-   'HIVSeqDBManagement.query_LANL': {'rate_limit': '10/m'},
-   'TreeingTools.write_results_to_mongo': {'rate_limit': '10/s'},
-   'TreeingTools.process_region': {'rate_limit': '10/m'}
+    'HIVSeqDBManagement.query_LANL': {'rate_limit': '10/m'},
+    'TreeingTools.write_results_to_mongo': {'rate_limit': '10/s'},
+    'TreeingTools.process_region': {'rate_limit': '10/m'}
+}
+
+CELERY_ROUTES = {
+    'TreeingTools.write_results_to_mongo': {'queue': 'writingqueue'}
 }
