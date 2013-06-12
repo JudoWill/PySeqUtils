@@ -26,6 +26,16 @@ def make_heatmap(data, col_labels, row_labels, colormap=None, **kwargs):
     return fig
 
 
+def add_grid(ax, xgrid_pos, ygrid_pos, **kwargs):
+    """Adds a 'grid' to the provided axis. Any kwargs are passed as line-specs."""
+
+    xmin, xmax = ax.get_xlim()
+    ymin, ymax = ax.get_ylim()
+
+    ax.hlines(ygrid_pos, xmin, xmax, **kwargs)
+    ax.vlines(xgrid_pos, ymin, ymax, **kwargs)
+
+
 def make_heatmap_df(dataframe, **kwargs):
 
     row_labels = dataframe.index
