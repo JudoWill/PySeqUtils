@@ -7,7 +7,8 @@ from pylab import get_cmap
 from types import StringType
 
 
-def make_heatmap(data, col_labels, row_labels, colormap=None, **kwargs):
+def make_heatmap(data, col_labels, row_labels,
+                 grid_kwargs=False, colormap=None, **kwargs):
 
     fig = plt.figure(**kwargs)
     plt.hold(True)
@@ -22,6 +23,12 @@ def make_heatmap(data, col_labels, row_labels, colormap=None, **kwargs):
 
     plt.yticks(range(len(row_labels)), row_labels)
     plt.xticks(range(len(col_labels)), col_labels, rotation=90)
+
+    if grid_kwargs:
+        xpos = np.arange(len(col_labels))+0.5
+        ypos = np.arange(len(row_labels))+0.5
+        add_grid(plt.gca(), xpos, ypos, **grid_kwargs)
+
     plt.hold(True)
     return fig
 
