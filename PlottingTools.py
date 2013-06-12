@@ -7,8 +7,11 @@ from pylab import get_cmap
 from types import StringType
 
 
-def make_heatmap(data, col_labels, row_labels,
-                 grid_kwargs=False, colormap=None, **kwargs):
+def make_heatmap(data, col_labels, row_labels, make_grid=True,
+                 grid_kwargs=None, colormap=None, **kwargs):
+
+    if make_grid and (grid_kwargs is None):
+        grid_kwargs = {'color': 'w', 'lw': 2}
 
     fig = plt.figure(**kwargs)
     plt.hold(True)
