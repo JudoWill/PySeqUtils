@@ -335,7 +335,7 @@ if __name__ == '__main__':
 
     parser.add_argument('infiles', type=str, help='Input files in Fasta format')
     parser.add_argument('-o', type=str, required=True, help='Output template.')
-    parser.add_argument('-R', action='store_true', default=False, help='Extract internal regions like V3?')
+    parser.add_argument('-R', action='store_true', default=True, help='Extract internal regions like V3?')
     parser.add_argument('-t', type=int, default=5, help='Number of threads to use when querying LANL. DONT BE A DICK!')
     parser.add_argument('-q', action='store_true', default=False, help='Be Quiet!')
 
@@ -349,6 +349,7 @@ if __name__ == '__main__':
 
     infiles = glob.glob(args.infiles)
     out_csv = args.o
+    nthreads = args.t
 
     logging.info('Calculating the number of seqs in %s' % ','.join(infiles))
     known_names = sum(line.startswith('>') for line in FileInput(infiles))
