@@ -19,6 +19,11 @@ from random import shuffle
 import numpy as np
 import logging
 from types import ListType, StringType
+from Bio.Alphabet import generic_dna, generic_protein
+from Bio.Alphabet import IUPAC
+from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 
 from pymongo import MongoClient
 
@@ -114,12 +119,14 @@ def push_dir(path):
         os.chdir(cur_path)
 
 
-def clean_sequences(input_seqs, is_aa=True):
+def clean_sequences(input_seqs, alphabet=None, is_aa=True):
 
-    if is_aa:
-        allowed = set('RHKDESTNQCUGPAVILMFYW-')
+    if (alphabet == generic_protein) or is_aa:
+        allowed = set(IUPAC.IUPACProtein.letters)
+    elif (alphabet == generic_dna) or not is_aa:
+        allowed = set(IUPAC.IUPACUnambiguousDNA.letters)
     else:
-        allowed = set('ACGT-')
+        raise KeyError('Unknown alphabet!')
 
     for name, seq in input_seqs:
         nseq = ''.join(l if l.upper() in allowed else '-' for l in seq)
