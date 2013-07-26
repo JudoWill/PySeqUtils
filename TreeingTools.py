@@ -423,5 +423,5 @@ def phylip_tree(seqs, alphabet=generic_protein, tmp_path=None, rm_dir=True):
     for orig_name, new_name in trans_names.items():
         node = out_tree.find_node_with_taxon_label(new_name)
         if node:
-            node.taxon = orig_name
+            node.taxon.label = orig_name
     return out_tree
