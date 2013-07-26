@@ -3,7 +3,7 @@ __author__ = 'will'
 import os
 import dendropy
 import contextlib
-from subprocess import check_output
+from subprocess import check_output, check_call
 import shlex
 from tempfile import mkdtemp
 from tempfile import NamedTemporaryFile as NTF
@@ -302,3 +302,126 @@ def check_distance_pvals(dist_dict, group_dict, group_frac=0.5, nreps=500):
     }
 
     return odict
+
+
+def write_phylip_seqs(seqs, outhandle, alphabet=generic_protein):
+    """Writes sequences to a Phylip formatted file. Due to the nature of the
+    format it standarizes the names and returns a dict mapping the orignal name
+    to the new name.
+
+    seqs -- A sequence of (name, seq) tuples.
+    outhandle -- The handle to write sequences into.
+    alphabet = generic_protein -- This is to define the input type of the
+      sequences.
+
+    returns:
+    trans_names -- A dict() mapping orignal names to the standardized names.
+    """
+
+    trans_names = {}
+    out_seqs = []
+    for num, (name, seq) in enumerate(clean_sequences(seqs, alphabet=alphabet)):
+        new_name = 'Seq-%i' % num
+        trans_names[name] = new_name
+        out_seqs.append(SeqRecord(Seq(seq,
+                                      alphabet=alphabet),
+                                  id=str(new_name)))
+    SeqIO.write(out_seqs, outhandle, 'phylip')
+    return trans_names
+
+
+def make_phylip_seq_dist_mat(inseqs, alphabet, tmp_path=None, rm_dir=True):
+    """Takes the input sequences and uses the PHYLIP tool to find their
+    pairwise distance. This is then used to do the neighbor joining in
+    later analysis.
+
+    inseqs -- A sequence of (name, sequence) tuples.
+    alphabet -- A Bio.Alphabet object indicating the the sequence type.
+                Currently this only accepts generic_protein and
+                generic_dna
+    tmp_path=None -- A path to create the temporary directories.
+    rm_dir=True -- Whether to remove the temporary directory after completion.
+
+    returns:
+    trans_names -- A dict() mapping the new-names to the standardized names.
+    dist_mat -- A str of the data returned from the phylip protdist
+                function. This is not programatically useful but can
+                be written to a file for later analysis.
+
+    """
+
+    commands = "2\ny\n"
+
+    with tmp_directory(dir=tmp_path, rm_dir=rm_dir) as r_path:
+        with push_dir(r_path):
+            with open('cmd_file', 'w') as cmd_handle:
+                cmd_handle.write(commands)
+            cmd_handle = open('cmd_file')
+            with open('infile', 'w') as handle:
+                trans_names = write_phylip_seqs(inseqs, handle, alphabet = alphabet)
+            if alphabet == generic_protein:
+                cmd = 'phylip protdist'
+            elif alphabet == generic_dna:
+                cmd = 'phylip dnadist'
+            else:
+                raise KeyError('Unknown alphabet.')
+            cmd = shlex.split(cmd)
+            check_call(cmd, stdin=cmd_handle)
+
+            with open('outfile') as handle:
+                dist_data = handle.read()
+                return trans_names, dist_data
+
+
+def make_phylip_tree(dist_data, tmp_path=None, rm_dir=True):
+    """Takes the dist_data returned by make_phylip_seq_dist_mat the
+    phylip neighbor tool to generate a tree.
+
+    dist_data -- The distance data returned by make_phylip_seq_dist_mat.
+    tmp_path=None -- A path to create the temporary directories.
+    rm_dir=True -- Whether to remove the temporary directory after completion.
+
+    returns:
+    tree -- A dendropy tree object of the resulting tree.
+    """
+
+    commands = "2\n3\ny\n"
+    with tmp_directory(dir=tmp_path, rm_dir=rm_dir) as r_path:
+        with push_dir(r_path):
+            with open('cmd_file', 'w') as cmd_handle:
+                cmd_handle.write(commands)
+            cmd_handle = open('cmd_file')
+            with open('infile', 'w') as handle:
+                handle.write(dist_data)
+            cmd = shlex.split('phylip neighbor')
+            check_call(cmd, stdin = cmd_handle)
+            with open('outtree') as handle:
+                tree = dendropy.Tree.get_from_stream(handle, schema='newick')
+                return tree
+
+
+def phylip_tree(seqs, alphabet=generic_protein, tmp_path=None, rm_dir=True):
+    """Uses the Phylip program to generate a tree from the input sequences.
+
+    seqs -- A sequence of (name, sequence) tuples.
+    alphabet -- A Bio.Alphabet object indicating the the sequence type.
+                Currently this only accepts generic_protein and
+                generic_dna
+    tmp_path=None -- A path to create the temporary directories.
+    rm_dir=True -- Whether to remove the temporary directory after completion.
+
+    returns:
+    tree -- A dendropy tree object of the resulting tree.
+    """
+
+    trans_names, dist_data = make_phylip_seq_dist_mat(seqs, alphabet,
+                                                      tmp_path=tmp_path,
+                                                      rm_dir=rm_dir)
+    out_tree = make_phylip_tree(dist_data,
+                                tmp_path=tmp_path,
+                                rm_dir=rm_dir)
+    for orig_name, new_name in trans_names.items():
+        node = out_tree.find_node_with_taxon_label(new_name)
+        if node:
+            node.taxon = orig_name
+    return out_tree
