@@ -91,7 +91,7 @@ def process_region(input_seqs, trop_dict, basename, database=None, mrbayes_args=
 
 
 @contextlib.contextmanager
-def tmp_directory(*args, **kwargs):
+def tmp_directory(rm_dir=True, *args, **kwargs):
     """A context manager which changes the working directory to the given
     path, and then changes it back to its previous value on exit.
 
@@ -100,8 +100,18 @@ def tmp_directory(*args, **kwargs):
     try:
         yield path + '/'
     finally:
-        pass
-        shutil.rmtree(path)
+        if rm_dir:
+            shutil.rmtree(path)
+
+@contextlib.contextmanager
+def push_dir(path):
+
+    cur_path = os.path.abspath(os.curdir)
+    try:
+        os.chdir(path)
+        yield
+    finally:
+        os.chdir(cur_path)
 
 
 def clean_sequences(input_seqs, is_aa=True):
@@ -138,7 +148,8 @@ def make_mrbayes_trees(input_seqs, mrbayes_kwargs=None, is_aa=True):
             txt = generate_mrbayes_nexus(align_file, align_file, is_aa=is_aa, **mrbayes_kwargs)
             handle.write(txt)
 
-        cmd = '/home/will/mb ' + mrbayes_cmd_file
+        cmd = 'mb ' + mrbayes_cmd_file
+        print cmd
         check_output(shlex.split(cmd))
 
         with open(multi_prob) as handle:
