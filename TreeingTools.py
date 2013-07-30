@@ -119,7 +119,7 @@ def push_dir(path):
         os.chdir(cur_path)
 
 
-def clean_sequences(input_seqs, alphabet=None, is_aa=True):
+def clean_sequences(input_seqs, alphabet=None, is_aa=True, dump_if_all_gaps=True):
 
     if (alphabet == generic_protein) or is_aa:
         allowed = set(IUPAC.IUPACProtein.letters)
@@ -129,7 +129,10 @@ def clean_sequences(input_seqs, alphabet=None, is_aa=True):
         raise KeyError('Unknown alphabet!')
 
     for name, seq in input_seqs:
-        nseq = ''.join(l if l.upper() in allowed else '-' for l in seq)
+        nseq = ''.join(l if l.upper() in allowed else '-' for l in seq.upper())
+        if all(l == '-' for l in nseq) and dump_if_all_gaps:
+            continue
+
         yield name, nseq
 
 
@@ -168,7 +171,7 @@ def make_mrbayes_trees(input_seqs, mrbayes_kwargs=None, is_aa=True):
 
 
 def generate_mrbayes_nexus(alignment_path, output_path,
-                           nchains=1, ngen=5000, samplefreq=1000,
+                           nchains=2, ngen=50000, samplefreq=10000,
                            is_aa=True):
     """Generates the NEXUS command to control MrBayes in the form that I usually use. This will likely be expanded as I
      have to include more issues.
@@ -281,6 +284,7 @@ def check_distance_pvals(dist_dict, group_dict, group_frac=0.5, nreps=500):
         if group_dict[key1] == group_dict[key2]:
             group_vals[group_dict[key1]].append(dist)
 
+    assert len(group_vals) == 2
     _, raw_pval = ttest_ind(*group_vals.values())
 
     nitems = int(group_frac*min(map(len, group_vals.values())))
@@ -371,6 +375,44 @@ def make_phylip_seq_dist_mat(inseqs, alphabet, tmp_path=None, rm_dir=True):
             with open('outfile') as handle:
                 dist_data = handle.read()
                 return trans_names, dist_data
+
+
+def process_phylip_dist_mat(dist_data, trans_names):
+    """Converts the output of make_phylip_seq_dist_mat into a format
+    appropriate to use in downstream analysis.
+
+    dist_data       A string of the dist_data as returned from the
+                    phylip protdist and dnadist programs.
+    trans_names     A dict mapping the translated names used in the
+                    phylip alignment format with the original names.
+
+    Returns:
+    dmat -- A dict() keyed by all pairs of sequences with the genetic distance
+            as the value. This can be used in the check_distance_pvals
+            function.
+    """
+
+    rev_dict = dict((val, key) for key, val in trans_names.items())
+    handle = StringIO(dist_data)
+    handle.next()
+    dist_groups = []
+
+    for line in handle:
+        if line.startswith('Seq-'):
+            dist_groups.append('')
+        dist_groups[-1] += line
+
+    omat = {}
+    tmpl = 'Seq-%i'
+    for seq_num, group in enumerate(dist_groups):
+        parts = group.split()[1:]
+        for onum, val in enumerate(parts):
+            nkey = (rev_dict[tmpl % seq_num], rev_dict[tmpl % onum])
+            nval = float(val)
+            if nval >= 0:
+                omat[nkey] = nval
+
+    return omat
 
 
 def make_phylip_tree(dist_data, tmp_path=None, rm_dir=True):
