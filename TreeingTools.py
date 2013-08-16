@@ -12,7 +12,7 @@ from GeneralSeqTools import write_nexus_alignment
 import csv
 from StringIO import StringIO
 from dendropy.treecalc import PatristicDistanceMatrix
-from itertools import combinations
+from itertools import combinations, product
 from collections import defaultdict
 from scipy.stats import ttest_ind
 from random import shuffle
@@ -454,6 +454,7 @@ def phylip_tree(seqs, alphabet=generic_protein, tmp_path=None, rm_dir=True):
 
     returns:
     tree -- A dendropy tree object of the resulting tree.
+    dist_data -- The a dict() of phylogentic distances between all pairs.
     """
 
     trans_names, dist_data = make_phylip_seq_dist_mat(seqs, alphabet,
@@ -466,4 +467,56 @@ def phylip_tree(seqs, alphabet=generic_protein, tmp_path=None, rm_dir=True):
         node = out_tree.find_node_with_taxon_label(new_name)
         if node:
             node.taxon.label = orig_name
-    return out_tree
+    return out_tree, process_phylip_dist_mat(dist_data, trans_names)
+
+
+def phylip_tree_collapse_unique(seqs, alphabet=generic_protein, tmp_path=None, rm_dir=True):
+    """Uses the Phylip program to generate a tree from the input sequences.
+    However, this one intelligently deals with repeated sequences.
+
+    seqs -- A sequence of (name, sequence) tuples.
+    alphabet -- A Bio.Alphabet object indicating the the sequence type.
+                Currently this only accepts generic_protein and
+                generic_dna
+    tmp_path=None -- A path to create the temporary directories.
+    rm_dir=True -- Whether to remove the temporary directory after completion.
+
+    returns:
+    tree -- A dendropy tree object of the resulting tree.
+    dist_data -- The phylogentic distance between all pairs.
+    """
+
+    name_defs = defaultdict(set)
+    seq_names = {}
+
+    uni_nseqs = []
+    for name, seq in seqs:
+        if seq not in seq_names:
+            new_name = 'UniSeq-%i' % len(seq_names)
+            uni_nseqs.append((new_name, seq))
+            seq_names[seq] = new_name
+            name_defs[new_name].add(name)
+        else:
+            name_defs[seq_names[seq]].add(name)
+
+    out_tree, dist_mat = phylip_tree(uni_nseqs, alphabet=alphabet,
+                                     tmp_path=tmp_path, rm_dir=rm_dir)
+
+    tax_set = out_tree.taxon_set
+    for old_name, new_names in name_defs.items():
+        node = out_tree.find_node_with_taxon_label(old_name)
+        if node:
+            names = iter(new_names)
+            node.taxon.label = names.next()
+            parent = node.parent_node
+            edge_dist = node.edge.length
+            for name in names:
+                parent.new_child(taxon=tax_set.new_taxon(label=name),
+                                 edge_length=edge_dist)
+
+    new_dmat = {}
+    for (n1, n2), dist in dist_mat.items():
+        for new_1, new_2 in product(name_defs[n1], name_defs[n2]):
+            new_dmat[(new_1, new_2)] = dist
+
+    return out_tree, new_dmat
