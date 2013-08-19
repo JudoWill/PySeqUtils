@@ -1,3 +1,4 @@
+from __future__ import division
 __author__ = 'will'
 
 import os
@@ -13,7 +14,7 @@ import csv
 from StringIO import StringIO
 from dendropy.treecalc import PatristicDistanceMatrix
 from itertools import combinations, product
-from collections import defaultdict
+from collections import defaultdict, Counter
 from scipy.stats import ttest_ind
 from random import shuffle
 import numpy as np
@@ -24,6 +25,7 @@ from Bio.Alphabet import IUPAC
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
+from scipy.stats import gaussian_kde
 
 from pymongo import MongoClient
 
@@ -499,6 +501,9 @@ def phylip_tree_collapse_unique(seqs, alphabet=generic_protein, tmp_path=None, r
         else:
             name_defs[seq_names[seq]].add(name)
 
+    if len(uni_nseqs) < 4:
+        raise ValueError('Too few unique sequences')
+
     out_tree, dist_mat = phylip_tree(uni_nseqs, alphabet=alphabet,
                                      tmp_path=tmp_path, rm_dir=rm_dir)
 
@@ -520,3 +525,53 @@ def phylip_tree_collapse_unique(seqs, alphabet=generic_protein, tmp_path=None, r
             new_dmat[(new_1, new_2)] = dist
 
     return out_tree, new_dmat
+
+
+def calculate_ai(tree, pheno_dict):
+    """Calculates the Association Index for a tree and a set of phenotypes.
+    http://jvi.asm.org/content/75/23/11686.full
+
+    Starting from the root of the tree, the composition of sequences in
+    each successive bifurcating node was calculated. An association value, d,
+    for the tree was calculated by summation of values individually
+    calculated from each node, according to the formula:
+
+    d = (1-f)/2**(n-1),
+
+    n = # sequences below this node
+    f = the frequency of most common sample type.
+
+    tree -- A dendropy tree.
+    pheno_dict -- A dict() of phenotypes.
+
+    returns:
+    AI
+    """
+
+    ai = 0.0
+    for node in tree.nodes():
+        if ~node.is_leaf():
+            leafs = node.leaf_nodes()
+            counts = Counter(pheno_dict[leaf.taxon.label] for leaf in leafs)
+            best_count = counts.most_common(n=1)[0][1]
+            f = best_count/len(leafs)
+
+            #have to do it in log-space due to Overflow errors with large trees
+            ai += 2**(np.log2(1-f)-(len(leafs)-1))
+
+    return ai
+
+
+def evaluate_association_index(tree, pheno_dict, nreps=100):
+
+    true_ai = calculate_ai(tree, pheno_dict)
+
+    rand_vals = []
+    new_tree = dendropy.Tree(tree)
+    for _ in range(nreps):
+        new_tree.randomly_assign_taxa(new_tree.taxon_set)
+        rand_vals.append(calculate_ai(new_tree, pheno_dict))
+    kde = gaussian_kde(rand_vals)
+    pval = kde.integrate_box_1d(true_ai, np.inf)
+    rand_mean = np.mean(rand_vals)
+    return true_ai, pval, rand_mean
