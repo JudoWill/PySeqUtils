@@ -49,13 +49,23 @@ class UnrollTransform(BaseEstimator):
 
     def __init__(self, numcols=None):
         self.numcols = numcols
+        self.keep_mask = None
 
     def fit(self, X, y=None):
-        self.numcols = X.shape[1]
+        mask = np.array(map(lambda x: all(not l.isalpha() for l in x), X.flatten())) == False
+        self.keep_mask = mask.reshape(X.shape)
         return self
 
     def transform(self, X, y=None):
-        return X.reshape(-1, 1)
+
+        if self.keep_mask is None:
+            self.fit(X)
+
+        if X.shape[0] != self.keep_mask.shape[0]:
+            raise NotImplementedError
+        if X.shape[1] != self.keep_mask.shape[1]:
+            raise NotImplementedError
+        return X[self.keep_mask].reshape(-1, 1)
 
     def fit_transform(self, X, y=None):
         return self.fit(X, y).transform(X, y)
