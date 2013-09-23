@@ -140,6 +140,22 @@ def testCountKmer():
         eq_(outdata[key], out[key])
 
 
+def testCountKmer_with_gaps():
+
+    indata = 'ABCDEF--GABC'
+    tups = ['ABC', 'BCD', 'CDE', 'DEF', 'GAB', 'ABC']
+    outdata = Counter(tups)
+
+    kmerformer = HIVAlignTools.KMerTransform()
+    out = kmerformer._generate_kmer(indata, 3)
+    keys = set(outdata.keys()) | set(out.keys())
+    print out
+    print outdata
+    for key in keys:
+        eq_(outdata[key], out[key])
+
+
+
 def testKmerTransform():
 
     indata = np.array(list('ABCDEFGHIJKLMNOPQRSTUVWXYZ'))[:20].reshape(4, 5)

@@ -124,7 +124,11 @@ class KMerTransform(BaseEstimator):
         self.dv = dv
 
     def _generate_kmer(self, seq, k):
-        return Counter(seq[s:s+k] for s in range(len(seq)-k+1))
+        counter = Counter(seq[s:s+k] for s in range(len(seq)-k+1))
+        rm_keys = [key for key in counter.keys() if any(not l.isalpha() for l in key)]
+        for key in rm_keys:
+            counter.pop(key, None)
+        return counter
 
     def _yield_kmer(self, X):
 
@@ -161,10 +165,14 @@ class FindInHIV(BaseEstimator):
         return self.predict(X)
 
 
-class AlignHIV(object):
+class AlignHIV(BaseEstimator):
 
     def __init__(self, winsize=30, min_k=2, max_k=5):
         self.winsize = winsize
         self.min_k = min_k
         self.max_k = max_k
+
+    def fit(self, X, y):
+        """X should be a set of
+        """
 
