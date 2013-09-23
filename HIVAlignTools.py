@@ -6,6 +6,22 @@ from collections import Counter
 import numpy as np
 
 
+class SeqTransformer(BaseEstimator):
+
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        max_len = max(len(seq) for seq in X)
+        Xout = []
+        for row in X:
+            Xout.append(row.ljust(max_len, '-'))
+        return np.array(Xout)
+
+
 class WindowTransformer(BaseEstimator):
     """ Converts arrays of items into windows of arrays. Currently only
      works on Char-arrays. For example:
@@ -126,4 +142,12 @@ class FindInHIV(BaseEstimator):
 
     def transform(self, X):
         return self.predict(X)
+
+
+class AlignHIV(object):
+
+    def __init__(self, winsize=30, min_k=2, max_k=5):
+        self.winsize = winsize
+        self.min_k = min_k
+        self.max_k = max_k
 

@@ -6,6 +6,20 @@ from sklearn.pipeline import Pipeline
 from collections import Counter
 
 
+def testSeqTransformer():
+
+    inseqs = ['ATGTCG',
+              'ATGG',
+              'ATGTAHYTD']
+    outdata = np.array(['ATGTCG---',
+                        'ATGG-----',
+                        'ATGTAHYTD'])
+
+    seqformer = HIVAlignTools.SeqTransformer().fit(None)
+    out = seqformer.transform(inseqs)
+    ok_(np.all(out == outdata))
+
+
 def testWindowTransformer():
 
     winsize = 3
@@ -64,7 +78,6 @@ def testUnrollTransform_reverse_tranform():
                        ['PQR', 'QRS', 'RST']])
     outdata = indata.copy()
     outdata[3, 2] = np.nan
-
 
     unroller = HIVAlignTools.UnrollTransform()
     unrolled = unroller.fit_transform(indata)
