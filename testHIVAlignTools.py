@@ -4,6 +4,8 @@ import numpy as np
 import HIVAlignTools
 from sklearn.pipeline import Pipeline
 from collections import Counter
+from StringIO import StringIO
+from GeneralSeqTools import fasta_writer
 
 
 def testSeqTransformer():
@@ -18,6 +20,24 @@ def testSeqTransformer():
     seqformer = HIVAlignTools.SeqTransformer().fit(None)
     out = seqformer.transform(inseqs)
     ok_(np.all(out == outdata))
+
+
+def testSeqTransformer_from_fasta():
+
+    handle = StringIO()
+    inseqs = [('Seq1', 'ATGTCG'),
+              ('Seq2', 'ATGG'),
+              ('Seq3', 'ATGTAHYTD')]
+    fasta_writer(handle, inseqs)
+    handle.seek(0)
+
+    outdata = np.array(['ATGTCG---',
+                        'ATGG-----',
+                        'ATGTAHYTD'])
+
+    names, out = HIVAlignTools.SeqTransformer.get_from_fasta_handle(handle)
+    ok_(np.all(out == outdata))
+    ok_(all(t == g for t, g in zip(names, ['Seq1', 'Seq2', 'Seq3'])))
 
 
 def testWindowTransformer():

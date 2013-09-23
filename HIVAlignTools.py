@@ -4,6 +4,7 @@ from sklearn.feature_extraction import DictVectorizer
 from sklearn.neighbors import KNeighborsClassifier
 from collections import Counter
 import numpy as np
+from GeneralSeqTools import fasta_reader
 
 
 class SeqTransformer(BaseEstimator):
@@ -20,6 +21,22 @@ class SeqTransformer(BaseEstimator):
         for row in X:
             Xout.append(row.ljust(max_len, '-'))
         return np.array(Xout)
+
+    def fit_transform(self, X, y=None):
+        return self.transform(X)
+
+    @staticmethod
+    def get_from_fasta_handle(handle, letters_only=True):
+
+        names = []
+        seqs = []
+        for name, seq in fasta_reader(handle):
+            names.append(name)
+            if letters_only:
+                seqs.append(''.join(l for l in seq if l.isalpha()))
+            else:
+                seqs.append(seq)
+        return names, SeqTransformer().fit_transform(seqs)
 
 
 class WindowTransformer(BaseEstimator):
