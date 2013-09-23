@@ -1,5 +1,7 @@
 __author__ = 'will'
 from sklearn.base import BaseEstimator
+from sklearn.feature_extraction import DictVectorizer
+from collections import Counter
 import numpy as np
 
 
@@ -56,3 +58,15 @@ class UnrollTransform(BaseEstimator):
 
     def fit_transform(self, X, y=None):
         return self.fit(X, y).transform(X, y)
+
+
+class KMerTransform(BaseEstimator):
+
+    def __init__(self, min_k=2, max_k=5, dv=DictVectorizer()):
+
+        self.min_k = min_k
+        self.max_k = max_k
+        self.dv = dv
+
+    def generate_kmer(self, seq, k):
+        return Counter(seq[s:s+k] for s in range(len(seq)-k+1))

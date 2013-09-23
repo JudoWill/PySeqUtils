@@ -1,8 +1,9 @@
 __author__ = 'will'
-from nose.tools import ok_
+from nose.tools import eq_, ok_
 import numpy as np
 import HIVAlignTools
 from sklearn.pipeline import Pipeline
+from collections import Counter
 
 
 def testWindowTransformer():
@@ -47,3 +48,16 @@ def testPipe():
                            ('unroll', HIVAlignTools.UnrollTransform())])
     out = pipe.transform(indata)
     ok_(np.all(out == outdata))
+
+
+def testCountKmer():
+
+    indata = 'ABCDEFGABC'
+    tups = ['ABC', 'BCD', 'CDE', 'DEF', 'EFG', 'FGA', 'GAB', 'ABC']
+    outdata = Counter(tups)
+
+    kmerformer = HIVAlignTools.KMerTransform()
+    out = kmerformer.generate_kmer(indata, 3)
+    keys = set(outdata.keys()) | set(out.keys())
+    for key in keys:
+        eq_(outdata[key], out[key])
