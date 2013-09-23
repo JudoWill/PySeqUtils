@@ -4,6 +4,15 @@ import numpy as np
 
 
 class WindowTransformer(BaseEstimator):
+    """ Converts arrays of items into windows of arrays. Currently only
+     works on Char-arrays. For example:
+
+     indata = np.array(list('ABCDEFGHIJKLMNOPQRSTUVWXYZ'))[:20].reshape(4, 5)
+     outdata = np.array([['ABC', 'BCD', 'CDE'],
+                         ['FGH', 'GHI', 'HIJ'],
+                         ['KLM', 'LMN', 'MNO'],
+                         ['PQR', 'QRS', 'RST']])
+    """
 
     def __init__(self, winsize=30):
         self.winsize = winsize
@@ -21,6 +30,19 @@ class WindowTransformer(BaseEstimator):
 
 
 class UnrollTransform(BaseEstimator):
+    """ Simply reshapes the input. This is useful for after the WindowTransformer.
+    For example:
+    indata = np.array([['ABC', 'BCD', 'CDE'],
+                       ['FGH', 'GHI', 'HIJ'],
+                       ['KLM', 'LMN', 'MNO'],
+                       ['PQR', 'QRS', 'RST']])
+    outdata = np.array(['ABC',
+                         'BCD',
+                         'CDE',
+                         'FGH',
+                         'GHI',
+                         ...])
+    """
 
     def __init__(self, numcols=None):
         self.numcols = numcols

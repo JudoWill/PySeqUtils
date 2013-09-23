@@ -1,5 +1,5 @@
 __author__ = 'will'
-from nose.tools import eq_, ok_
+from nose.tools import ok_
 import numpy as np
 import HIVAlignTools
 from sklearn.pipeline import Pipeline
