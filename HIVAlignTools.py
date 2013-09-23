@@ -70,6 +70,17 @@ class UnrollTransform(BaseEstimator):
     def fit_transform(self, X, y=None):
         return self.fit(X, y).transform(X, y)
 
+    def reverse_transform(self, X):
+
+        if np.prod(X.shape) != np.sum(self.keep_mask.flatten()):
+            raise NotImplementedError
+
+        Xout = [np.nan]*np.prod(self.keep_mask.shape)
+        for pos, val in zip(np.where(self.keep_mask.flatten())[0], X.flatten()):
+            Xout[pos] = val
+
+        return np.array(Xout).reshape(self.keep_mask.shape)
+
 
 class KMerTransform(BaseEstimator):
 

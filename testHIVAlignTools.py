@@ -63,6 +63,8 @@ def testUnrollTransform_reverse_tranform():
                        ['-QR', 'QRS', '---'],
                        ['PQR', 'QRS', 'RST']])
     outdata = indata.copy()
+    outdata[3, 2] = np.nan
+
 
     unroller = HIVAlignTools.UnrollTransform()
     unrolled = unroller.fit_transform(indata)
