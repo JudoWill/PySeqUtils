@@ -31,7 +31,46 @@ def testUnrollTransform():
 
     unroller = HIVAlignTools.UnrollTransform()
     out = unroller.fit_transform(indata)
+    eq_(outdata.shape[0], out.shape[0])
+    eq_(outdata.shape[1], out.shape[1])
     ok_(np.all(out == outdata))
+
+
+def testUnrollTransform_withgaps():
+
+    indata = np.array([['ABC', 'BCD', 'CDE'],
+                       ['FGH', 'GHI', 'HIJ'],
+                       ['KLM', 'LMN', 'MNO'],
+                       ['PQR', 'QRS', 'RST'],
+                       ['-QR', 'QRS', '---']])
+    outdata = np.array(['ABC', 'BCD', 'CDE', 'FGH',
+                        'GHI', 'HIJ', 'KLM', 'LMN',
+                        'MNO', 'PQR', 'QRS', 'RST',
+                        '-QR', 'QRS']).reshape(-1, 1)
+
+    unroller = HIVAlignTools.UnrollTransform()
+    out = unroller.fit_transform(indata)
+    eq_(outdata.shape[0], out.shape[0])
+    eq_(outdata.shape[1], out.shape[1])
+    ok_(np.all(out == outdata))
+
+
+def testUnrollTransform_reverse_tranform():
+
+    indata = np.array([['ABC', 'BCD', 'CDE'],
+                       ['FGH', 'GHI', 'HIJ'],
+                       ['KLM', 'LMN', 'MNO'],
+                       ['-QR', 'QRS', '---'],
+                       ['PQR', 'QRS', 'RST']])
+    outdata = indata.copy()
+
+    unroller = HIVAlignTools.UnrollTransform()
+    unrolled = unroller.fit_transform(indata)
+
+    rick_rolled = unroller.reverse_transform(unrolled)
+    eq_(outdata.shape[0], rick_rolled.shape[0])
+    eq_(outdata.shape[1], rick_rolled.shape[1])
+    ok_(np.all(outdata == outdata))
 
 
 def testPipe():
@@ -47,6 +86,9 @@ def testPipe():
     pipe = Pipeline(steps=[('window', HIVAlignTools.WindowTransformer(winsize=winsize)),
                            ('unroll', HIVAlignTools.UnrollTransform())])
     out = pipe.transform(indata)
+
+    eq_(outdata.shape[0], out.shape[0])
+    eq_(outdata.shape[1], out.shape[1])
     ok_(np.all(out == outdata))
 
 
