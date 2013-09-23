@@ -147,8 +147,9 @@ def seq_align_to_ref(input_seqs, ref_seq, max_workers=None):
         res = imap(call_muscle, check_seqs)
 
     for alignment in res:
-        name = alignment[0][0]
-        ref_align = seq_map_to_ref(alignment[0][1], alignment[1][1])
+        adict = dict(alignment)
+        name = [key for key in adict.keys() if key != '__ref__'][0]
+        ref_align = seq_map_to_ref(adict[name], adict['__ref__'])
         yield name, ref_align
 
 
