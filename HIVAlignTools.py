@@ -61,7 +61,10 @@ class WindowTransformer(BaseEstimator):
         Xout = []
         for row in range(X.shape[0]):
             for start in range((X.shape[1]-self.winsize)+1):
-                Xout.append(''.join(X[row, start:start+self.winsize]))
+                tseq = ''.join(l for l in X[row, start:] if l.isalpha())
+                if len(tseq) < self.winsize:
+                    tseq = tseq.ljust(self.winsize, '-')
+                Xout.append(tseq[0:self.winsize])
         return np.array(Xout).reshape(X.shape[0], -1)
 
 
@@ -173,6 +176,8 @@ class AlignHIV(BaseEstimator):
         self.max_k = max_k
 
     def fit(self, X, y):
-        """X should be a set of
-        """
+
+        pass
+
+
 
