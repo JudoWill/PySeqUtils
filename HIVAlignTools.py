@@ -52,7 +52,7 @@ class UnrollTransform(BaseEstimator):
         self.keep_mask = None
 
     def fit(self, X, y=None):
-        mask = np.array(map(lambda x: all(not l.isalpha() for l in x), X.flatten())) == False
+        mask = np.array(map(lambda x: not all(not l.isalpha() for l in x), X.flatten()))
         self.keep_mask = mask.reshape(X.shape)
         return self
 
