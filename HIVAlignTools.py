@@ -1,6 +1,7 @@
 __author__ = 'will'
 from sklearn.base import BaseEstimator
 from sklearn.feature_extraction import DictVectorizer
+from sklearn.neighbors import KNeighborsClassifier
 from collections import Counter
 import numpy as np
 
@@ -87,4 +88,21 @@ class KMerTransform(BaseEstimator):
 
         return self.dv.fit_transform(list(self._yield_kmer(X)))
 
+
+class FindInHIV(BaseEstimator):
+    """ Just a simple wrapper around the KNeighborsClassifier.
+    """
+
+    def __init__(self, estimator=KNeighborsClassifier(n_neighbors=1)):
+        self.estimator = estimator
+
+    def fit(self, X, y):
+        self.estimator.fit(X, y)
+        return self
+
+    def predict(self, X):
+        return self.estimator.predict(X)
+
+    def transform(self, X):
+        return self.predict(X)
 
