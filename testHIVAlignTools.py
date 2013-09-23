@@ -57,7 +57,20 @@ def testCountKmer():
     outdata = Counter(tups)
 
     kmerformer = HIVAlignTools.KMerTransform()
-    out = kmerformer.generate_kmer(indata, 3)
+    out = kmerformer._generate_kmer(indata, 3)
     keys = set(outdata.keys()) | set(out.keys())
     for key in keys:
         eq_(outdata[key], out[key])
+
+
+def testKmerTransform():
+
+    indata = np.array(list('ABCDEFGHIJKLMNOPQRSTUVWXYZ'))[:20].reshape(4, 5)
+    pipe = Pipeline(steps=[('window', HIVAlignTools.WindowTransformer(winsize=4)),
+                           ('unroll', HIVAlignTools.UnrollTransform())])
+    out = pipe.transform(indata)
+    kmerformer = HIVAlignTools.KMerTransform(min_k=2, max_k=3).fit(out)
+    Xout = kmerformer.transform(out)
+
+    eq_(Xout.shape[0], out.shape[0])
+    ok_(Xout.shape[1] > out.shape[0])

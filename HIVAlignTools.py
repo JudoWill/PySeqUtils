@@ -68,5 +68,23 @@ class KMerTransform(BaseEstimator):
         self.max_k = max_k
         self.dv = dv
 
-    def generate_kmer(self, seq, k):
+    def _generate_kmer(self, seq, k):
         return Counter(seq[s:s+k] for s in range(len(seq)-k+1))
+
+    def _yield_kmer(self, X):
+
+        for row in range(X.shape[0]):
+            counter = Counter()
+            seq = X[row, :][0]
+            for k in range(self.min_k, self.max_k+1):
+                counter += self._generate_kmer(seq, k)
+            yield counter
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+
+        return self.dv.fit_transform(list(self._yield_kmer(X)))
+
+
