@@ -6,6 +6,7 @@ from sklearn.pipeline import Pipeline
 from collections import Counter
 from StringIO import StringIO
 from GeneralSeqTools import fasta_writer
+from itertools import product
 
 
 def testSeqTransformer():
@@ -194,3 +195,17 @@ def test_score_seqs():
 
     oscore = HIVAlignTools.score_seqs(known, guess)
     eq_(score, oscore)
+
+
+def test_get_seq():
+
+    prots = ['env', 'gag', 'nef', 'pol',
+             'rev', 'tat', 'vif', 'vpr',
+             'vpu']
+    typs = ['PRO', 'DNA']
+    wanted = list(product(prots, typs))+[('genome', 'DNA'),
+                                         ('ltr', 'DNA')]
+    for gene, typ in wanted:
+        names, seqs = HIVAlignTools.get_seq(gene, typ)
+        yield ok_, len(names) > 1, 'Had issue with %s, %s' % (gene, typ)
+        yield eq_, len(names), seqs.shape[0], 'Had issue with %s, %s' % (gene, typ)
