@@ -179,3 +179,18 @@ def test_score_seq():
         oscore = HIVAlignTools.score_seq(s1, s2)
         yield eq_, score, oscore
 
+
+def test_score_seqs():
+
+    seqs = [('atgtag', 'atgtag', 30.0),
+            ('atgtag', 'atg', 15),
+            ('GTIJ', 'GTIJ', 15),
+            ('GTIJAGATS', 'GTIJAGATS', 38)]
+
+    former = HIVAlignTools.SeqTransformer()
+    known = former.transform(np.array([s for s, _, _ in seqs]))
+    guess = former.transform(np.array([s for _, s, _ in seqs]))
+    score = sum(v for _, _, v in seqs)
+
+    oscore = HIVAlignTools.score_seqs(known, guess)
+    eq_(score, oscore)
