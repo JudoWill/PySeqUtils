@@ -7,13 +7,12 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 from GeneralSeqTools import fasta_reader, fasta_writer
-from subprocess import check_call
+from subprocess import check_call, STDOUT
 import shlex
 from Bio.Blast import NCBIXML
 from StringIO import StringIO
 from Bio.Blast.Applications import NcbiblastxCommandline, NcbiblastnCommandline
 from tempfile import NamedTemporaryFile
-
 
 class SeqTransformer(BaseEstimator):
 
@@ -195,7 +194,7 @@ def score_seq(known, guess, gapopen=10, gapextend=1):
                               'ge': gapextend
                               }
                 cmd_list = shlex.split(cmd % param_dict)
-                check_call(cmd_list)
+                check_call(cmd_list, stdout=open(os.devnull, 'w'), stderr=STDOUT)
                 for line in out_handle:
                     parts = line.split()
                     if len(parts) == 4:
