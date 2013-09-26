@@ -296,3 +296,49 @@ class BlastAligner(BaseEstimator, ClusterMixin):
         return (pos_scores - bad_scores)/y.shape[0]
 
 
+def get_seq(prot_name, typ):
+    trans_path = '/home/will/PySeqUtils/TransToolStuff/'
+    tmp = 'HIV1_ALL_2012_%s_%s.fasta' % (prot_name.lower(), typ.upper())
+    with open(trans_path + tmp) as handle:
+        return SeqTransformer.get_from_fasta_handle(handle)
+
+
+def generate_traindata(prot, train_type='pro'):
+
+    neg_controls = {'env': ['gag', 'pol', 'vif', 'vpr', 'ltr'],
+                    'gag': ['ltr', 'vif', 'vpr', 'vpu', 'tat', 'rev', 'env'],
+                    'ltr': ['gag', 'pol', 'vpr', 'vpu', 'env'],
+                    'nef': ['pol', 'gag', 'vpu', 'tat'],
+                    'pol': ['env', 'vpr', 'vpu', 'nef', 'rev', 'ltr'],
+                    'rev': ['ltr', 'gag', 'pol', 'vif', 'nef'],
+                    'tat': ['ltr', 'pol', 'vif', 'nef'],
+                    'vif': ['ltr', 'tat', 'vpu', 'rev', 'env', 'nef'],
+                    'vpr': ['ltr', 'gag', 'pol', 'rev', 'env', 'nef'],
+                    'vpu': ['ltr', 'gag', 'pol', 'vif', 'vpr', 'nef'],
+                    }
+
+    pos_names, pos_X = get_seq('genome', 'DNA')
+    env_names, env_y = get_seq(prot, train_type)
+    neg_names = []
+    neg_X = None
+    for neg_prot in neg_controls[prot]:
+        tnames, tx = get_seq(neg_prot, 'DNA')
+        neg_names += tnames
+        if neg_X is None:
+            neg_X = tx.copy()
+        else:
+            neg_X = np.concatenate((neg_X, tx))
+
+    pos_X_ser = pd.Series(pos_X, index=pos_names)
+    env_y_ser = pd.Series(env_y, index=env_names)
+
+    X_ser, y_ser = pos_X_ser.align(env_y_ser, join='inner')
+    X = X_ser.values
+    y = y_ser.values
+    in_env = set(env_names)
+    neg_inds = [num for num, name in enumerate(neg_names) if name not in in_env]
+    wneg_X = neg_X[neg_inds]
+    wneg_y = np.array(['XX']*wneg_X.shape[0])
+
+    return np.concatenate((X, wneg_X)), np.concatenate((y, wneg_y))
+
