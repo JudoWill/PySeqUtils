@@ -205,7 +205,7 @@ def score_seqs(known_seqs, guess_seqs, gapopen=10, gapextend=1):
 
     score = 0.0
     for ind in range(known_seqs.shape[0]):
-        score += score_seq(known_seqs[0], guess_seqs[0],
+        score += score_seq(known_seqs[ind], guess_seqs[ind],
                            gapopen=gapopen, gapextend=gapextend)
     return score
 
