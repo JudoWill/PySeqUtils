@@ -155,7 +155,6 @@ def testCountKmer_with_gaps():
         eq_(outdata[key], out[key])
 
 
-
 def testKmerTransform():
 
     indata = np.array(list('ABCDEFGHIJKLMNOPQRSTUVWXYZ'))[:20].reshape(4, 5)
@@ -167,3 +166,16 @@ def testKmerTransform():
 
     eq_(Xout.shape[0], out.shape[0])
     ok_(Xout.shape[1] > out.shape[0])
+
+
+def test_score_seq():
+
+    seqs = [('atgtag', 'atgtag', 30.0),
+            ('atgtag', 'atg', 15),
+            ('GTIJ', 'GTIJ', 15),
+            ('GTIJAGATS', 'GTIJAGATS', 38)]
+
+    for s1, s2, score in seqs:
+        oscore = HIVAlignTools.score_seq(s1, s2)
+        yield eq_, score, oscore
+
