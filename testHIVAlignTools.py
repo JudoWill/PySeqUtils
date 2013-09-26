@@ -209,3 +209,18 @@ def test_get_seq():
         names, seqs = HIVAlignTools.get_seq(gene, typ)
         yield ok_, len(names) > 1, 'Had issue with %s, %s' % (gene, typ)
         yield eq_, len(names), seqs.shape[0], 'Had issue with %s, %s' % (gene, typ)
+
+
+def test_generate_traindata():
+
+    prots = ['env', 'gag', 'nef', 'pol',
+             'rev', 'tat', 'vif', 'vpr',
+             'vpu']
+    for prot in prots:
+        X, y = HIVAlignTools.generate_traindata(prot, train_type='pro')
+        yield ok_, y.shape[0] > 100, 'Had issue with %s' % prot
+        yield eq_, y.shape[0], X.shape[0], 'Had issue with %s' % prot
+
+    X, y = HIVAlignTools.generate_traindata('ltr', train_type='dna')
+    yield ok_, y.shape[0] > 100, 'Had issue with %s' % 'LTR'
+    yield eq_, y.shape[0], X.shape[0], 'Had issue with %s' % 'LTR'
