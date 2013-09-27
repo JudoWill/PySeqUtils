@@ -1,5 +1,5 @@
 __author__ = 'will'
-import os
+import os, os.path
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.neighbors import KNeighborsClassifier
@@ -250,7 +250,7 @@ class BlastAligner(BaseEstimator, ClusterMixin):
         else:
             cmd += 'nucl'
 
-        check_call(shlex.split(cmd))
+        check_call(shlex.split(cmd), stdout=open(os.devnull, 'w'), stderr=STDOUT)
         return self
 
     def predict(self, X):
@@ -261,32 +261,36 @@ class BlastAligner(BaseEstimator, ClusterMixin):
             blast_cmd = NcbiblastnCommandline
 
         with NamedTemporaryFile(dir=self.tmp_path, delete=True) as fasta_handle:
-            self._write_seqs(X, fasta_handle)
-            blastx_cline = blast_cmd(query=fasta_handle.name,
-                                     db=self.db_path, outfmt=5,
-                                     out='-',
-                                     evalue=self.evalue,
-                                     word_size=self.word_size,
-                                     gapopen=self.gapopen,
-                                     gapextend=self.gapextend,
-                                     max_intron_length=self.max_intron_length,
-                                     num_threads=self.num_threads)
-            stdout, stderr = blastx_cline()
+            with NamedTemporaryFile(dir=self.tmp_path, delete=True) as out_handle:
+                self._write_seqs(X, fasta_handle)
+                blastx_cline = blast_cmd(query=fasta_handle.name,
+                                         db=self.db_path, outfmt=5,
+                                         out=out_handle.name,
+                                         evalue=self.evalue,
+                                         word_size=self.word_size,
+                                         gapopen=self.gapopen,
+                                         gapextend=self.gapextend,
+                                         max_intron_length=self.max_intron_length,
+                                         num_threads=self.num_threads)
+                stdout, stderr = blastx_cline()
 
-        blast_records = NCBIXML.parse(StringIO(stdout))
+                blast_records = list(NCBIXML.parse(out_handle))
         prots = []
         for rec in blast_records:
             for align in rec.alignments:
                 hsp = align.hsps[0]
                 prots.append({'ID': rec.query,
                               'Seq': hsp.query})
-        blast_out = pd.DataFrame(prots).groupby('ID')['Seq'].first()
-        wanted_out = pd.DataFrame({'ID': ['Seq-%03i' % i for i in range(X.shape[0])],
-                                   'want_seq': [True]*X.shape[0],
-                                   }).groupby('ID')['want_seq'].first()
-        out, _ = blast_out.align(wanted_out, join='right')
+        if prots:
+            blast_out = pd.DataFrame(prots).groupby('ID')['Seq'].first()
+            wanted_out = pd.DataFrame({'ID': ['Seq-%03i' % i for i in range(X.shape[0])],
+                                       'want_seq': [True]*X.shape[0],
+                                       }).groupby('ID')['want_seq'].first()
+            out, _ = blast_out.align(wanted_out, join='right')
 
-        return SeqTransformer().transform(out.fillna('XX').values)
+            return SeqTransformer().transform(out.fillna('XX').values)
+        else:
+            return np.array(['XX']*X.shape[0])
 
     def score(self, X, y):
 
@@ -317,6 +321,8 @@ def generate_traindata(prot, train_type='pro'):
                     'vif': ['ltr', 'tat', 'vpu', 'rev', 'env', 'nef'],
                     'vpr': ['ltr', 'gag', 'pol', 'rev', 'env', 'nef'],
                     'vpu': ['ltr', 'gag', 'pol', 'vif', 'vpr', 'nef'],
+                    'gp41': ['gag', 'pol', 'vif', 'vpr', 'ltr'],
+                    'gp120': ['gag', 'pol', 'vif', 'vpr', 'ltr'],
                     'v3': ['gag', 'pol', 'vif', 'vpr', 'ltr'],
                     }
 
@@ -351,7 +357,7 @@ def train_aligner(prot, path, train_type='pro', test_size=500, n_jobs=1, verbose
     X, y = generate_traindata(prot, train_type=train_type)
     yclass = y == 'XX'
     cv = StratifiedShuffleSplit(yclass,
-                                n_iter=10,
+                                n_iter=3,
                                 test_size=test_size,
                                 train_size=100)
     param_dict = {'evalue': np.logspace(-100, 1, 20)}
@@ -373,14 +379,21 @@ def train_aligner(prot, path, train_type='pro', test_size=500, n_jobs=1, verbose
 
 
 def build_aligners(base_path='/home/will/PySeqUtils/TransToolStuff/dbs/',
-                   verbose=1):
+                   verbose=1, n_jobs=1):
 
-    prots = ['gag', 'ltr', 'vif', 'vpr', 'vpu', 'tat', 'rev', 'env', 'ltr', 'v3']
+    prots = ['gag', 'vif',  'vpu',
+             'tat', 'rev', 'env', 'gp120',
+             'gp41', 'v3', 'ltr'] #'vpr',
     for prot in prots:
         print prot
         path = base_path+prot
+        if os.path.exists(path + '.pkl'):
+            continue
         aligner = train_aligner(prot, path+'.fasta',
-                                verbose=verbose,
-                                train_type='pro' if prot != 'ltr' else 'nuc')
+                                verbose=verbose, n_jobs=n_jobs,
+                                train_type='pro' if prot != 'ltr' else 'dna')
         with open(path+'.pkl', 'w') as handle:
             pickle.dump(aligner, handle)
+
+if __name__ == '__main__':
+    pass
