@@ -1,5 +1,5 @@
 __author__ = 'will'
-import os, os.path
+import os
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.neighbors import KNeighborsClassifier
@@ -10,12 +10,12 @@ from GeneralSeqTools import fasta_reader, fasta_writer
 from subprocess import check_call, STDOUT
 import shlex
 from Bio.Blast import NCBIXML
-from StringIO import StringIO
 from Bio.Blast.Applications import NcbiblastxCommandline, NcbiblastnCommandline
 from tempfile import NamedTemporaryFile
 from sklearn.cross_validation import StratifiedShuffleSplit
 from sklearn.grid_search import GridSearchCV
 import pickle
+
 
 class SeqTransformer(BaseEstimator):
 
