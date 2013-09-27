@@ -15,6 +15,7 @@ from Bio.Blast.Applications import NcbiblastxCommandline, NcbiblastnCommandline
 from tempfile import NamedTemporaryFile
 from sklearn.cross_validation import StratifiedShuffleSplit
 from sklearn.grid_search import GridSearchCV
+import pickle
 
 class SeqTransformer(BaseEstimator):
 
@@ -316,6 +317,7 @@ def generate_traindata(prot, train_type='pro'):
                     'vif': ['ltr', 'tat', 'vpu', 'rev', 'env', 'nef'],
                     'vpr': ['ltr', 'gag', 'pol', 'rev', 'env', 'nef'],
                     'vpu': ['ltr', 'gag', 'pol', 'vif', 'vpr', 'nef'],
+                    'v3': ['gag', 'pol', 'vif', 'vpr', 'ltr'],
                     }
 
     pos_names, pos_X = get_seq('genome', 'DNA')
@@ -368,3 +370,17 @@ def train_aligner(prot, path, train_type='pro', test_size=500, n_jobs=1, verbose
     aligner.fit(X, y)
 
     return aligner
+
+
+def build_aligners(base_path='/home/will/PySeqUtils/TransToolStuff/dbs/',
+                   verbose=1):
+
+    prots = ['gag', 'ltr', 'vif', 'vpr', 'vpu', 'tat', 'rev', 'env', 'ltr', 'v3']
+    for prot in prots:
+        print prot
+        path = base_path+prot
+        aligner = train_aligner(prot, path+'.fasta',
+                                verbose=verbose,
+                                train_type='pro' if prot != 'ltr' else 'nuc')
+        with open(path+'.pkl', 'w') as handle:
+            pickle.dump(aligner, handle)
