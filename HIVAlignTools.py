@@ -13,6 +13,8 @@ from Bio.Blast import NCBIXML
 from StringIO import StringIO
 from Bio.Blast.Applications import NcbiblastxCommandline, NcbiblastnCommandline
 from tempfile import NamedTemporaryFile
+from sklearn.cross_validation import StratifiedShuffleSplit
+from sklearn.grid_search import GridSearchCV
 
 class SeqTransformer(BaseEstimator):
 
@@ -213,7 +215,7 @@ def score_seqs(known_seqs, guess_seqs, gapopen=10, gapextend=1):
 class BlastAligner(BaseEstimator, ClusterMixin):
 
     def __init__(self, evalue=10, word_size=2, gapopen=11, gapextend=1,
-                 max_intron_length = 20, tmp_path='/tmp/', result_type='aa',
+                 max_intron_length=20, tmp_path='/tmp/', result_type='pro',
                  db_path=NamedTemporaryFile(suffix='.fasta').name, num_threads=1):
         self.evalue = evalue
         self.word_size = word_size
@@ -242,7 +244,7 @@ class BlastAligner(BaseEstimator, ClusterMixin):
         with open(self.db_path, 'w') as handle:
             self._write_seqs(y[~empty_mask], handle)
         cmd = 'makeblastdb -in %s -dbtype ' % self.db_path
-        if self.result_type == 'aa':
+        if self.result_type == 'pro':
             cmd += 'prot'
         else:
             cmd += 'nucl'
@@ -252,7 +254,7 @@ class BlastAligner(BaseEstimator, ClusterMixin):
 
     def predict(self, X):
 
-        if self.result_type == 'aa':
+        if self.result_type == 'pro':
             blast_cmd = NcbiblastxCommandline
         else:
             blast_cmd = NcbiblastnCommandline
@@ -341,3 +343,28 @@ def generate_traindata(prot, train_type='pro'):
 
     return np.concatenate((X, wneg_X)), np.concatenate((y, wneg_y))
 
+
+def train_aligner(prot, path, train_type='pro', test_size=500, n_jobs=1, verbose=0):
+
+    X, y = generate_traindata(prot, train_type=train_type)
+    yclass = y == 'XX'
+    cv = StratifiedShuffleSplit(yclass,
+                                n_iter=10,
+                                test_size=test_size,
+                                train_size=100)
+    param_dict = {'evalue': np.logspace(-100, 1, 20)}
+    gd = GridSearchCV(BlastAligner(num_threads=20,
+                                   result_type=train_type),
+                      param_dict,
+                      cv=cv,
+                      n_jobs=n_jobs,
+                      verbose=verbose,
+                      refit=False)
+    gd.fit(X, y)
+
+    aligner = BlastAligner(num_threads=100,
+                           result_type=train_type,
+                           db_path=path, **gd.best_params_)
+    aligner.fit(X, y)
+
+    return aligner
