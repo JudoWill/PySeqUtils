@@ -75,6 +75,9 @@ def WebPSSM_V3_fasta(V3_tuple, matrix='x4r5'):
         jobid = re.findall('jobid=(\d+)', soup.meta.attrs['content'])[0]
     except IndexError:
         return []
+    except AttributeError:
+        return []
+
     joburl = basejob % jobid
 
     out = None
