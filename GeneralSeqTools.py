@@ -6,14 +6,18 @@ from tempfile import NamedTemporaryFile as NTF
 from concurrent.futures import ThreadPoolExecutor
 import shlex
 import os
+import re
 import csv
+import time
 from pandas import DataFrame
 from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import IUPAC
-from mechanize import Browser
+from mechanize import Browser, HTTPError
 from collections import defaultdict
+from functools import partial
+from bs4 import BeautifulSoup
 
 
 def yield_chunks(iterable, chunksize):
@@ -24,7 +28,10 @@ def yield_chunks(iterable, chunksize):
         chunk = take(chunksize, iterable)
 
 
-def WebPSSM_V3_series(input_V3_seqs, threads=20):
+def WebPSSM_V3_series(input_V3_seqs, threads=20, matrix='x4r5'):
+
+    if matrix not in {'x4r5', 'sinsi', 'subC'}:
+        raise KeyError('%s matrix not understood.' % matrix)
 
     if threads:
         executor = ThreadPoolExecutor(max_workers=threads)
@@ -32,35 +39,57 @@ def WebPSSM_V3_series(input_V3_seqs, threads=20):
     else:
         processor = imap
 
+    pssm_func = partial(WebPSSM_V3_fasta, matrix=matrix)
     chunk_iter = yield_chunks(iter(input_V3_seqs), 30)
-    scores = defaultdict(list)
-    #fields = ['name','score','pred','x4.pct','r5.pct','geno','pos.chg','net.chg','percentile']
-    for num, res in enumerate(processor(WebPSSM_V3_fasta, chunk_iter)):
-        if num % 100 == 0:
-            print len(scores), 'already completed'
+    fields = ['name', 'score',
+              'pred', ' x4.pct',
+              'r5.pct', 'geno',
+              'pos.chg', 'net.chg',
+              'percentile']
+    for res in processor(pssm_func, chunk_iter):
         for row in res:
-            scores[row[0]].append(float(row[1]))
-
-    for name, vals in scores.items():
-        yield name, sum(vals)/len(vals)
+            yield dict(zip(fields, row))
 
 
-def WebPSSM_V3_fasta(V3_tuple):
+def WebPSSM_V3_fasta(V3_tuple, matrix='x4r5'):
+
+    if matrix not in {'x4r5', 'sinsi', 'subC'}:
+        raise KeyError('%s matrix not understood.' % matrix)
 
     V3_fasta = ''
     for name, seq in V3_tuple:
         V3_fasta += '>%s\n%s\n' % (name, seq)
     baseurl = 'http://indra.mullins.microbiol.washington.edu/webpssm/'
+    basejob = 'http://indra.mullins.microbiol.washington.edu/webpssm/data/results/%s.pssm.txt'
     br = Browser()
     br.open(baseurl)
     br.select_form(nr=0)
+
     br['seqs'] = V3_fasta
+    br['matrix'] = ['subC']
+    br['datatype'] = ['aa']
+    resp = br.submit()
+
+    soup = BeautifulSoup(resp.read())
     try:
-        br.submit()
-    except:
+        jobid = re.findall('jobid=(\d+)', soup.meta.attrs['content'])[0]
+    except IndexError:
         return []
-    link = br.find_link(text='here')
-    out = br.follow_link(link).read()
+    joburl = basejob % jobid
+
+    out = None
+    attempts = 0
+    waittime = 10
+    while (out is None) and (attempts < 10):
+        try:
+            attempts +=1
+            nresp = br.open(joburl)
+            out = nresp.read()
+        except HTTPError:
+            time.sleep(waittime)
+
+    if out is None:
+        return []
     return list(csv.reader(StringIO(out), delimiter='\t'))[2:]
 
 
