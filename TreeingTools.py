@@ -472,22 +472,51 @@ def phylip_tree(seqs, alphabet=generic_protein, tmp_path=None, rm_dir=True):
     return out_tree, process_phylip_dist_mat(dist_data, trans_names)
 
 
-def run_FastTree(seqs, alphabet=generic_protein, tmp_path=None):
+def run_FastTree(seqs, alphabet=generic_protein, tmp_path=None, uniq_seqs=False):
 
-    cmd = '/home/will/PySeqUtils/FastTree %(alpha)s -quiet %(path)s'
+    if uniq_seqs:
 
-    with NTF(dir=tmp_path, suffix='.fasta') as handle:
-        fasta_writer(handle, seqs)
-        handle.flush()
-        os.fsync(handle)
-        tdict = {
-            'alpha': '-nt' if alphabet == generic_dna else '',
-            'path': handle.name
-        }
-        cmd_list = shlex.split(cmd % tdict)
-        tree_str = check_output(cmd_list)
+        trans_names = defaultdict(list)
+        norm_seq_names = {}
+        for num, (name, seq) in enumerate(seqs):
+            trans_names[seq].append(name)
+            new_name = 'Seq-%i' % num
+            norm_seq_names[seq] = new_name
 
-    return dendropy.Tree(stream=StringIO(tree_str), schema='newick')
+        uni_seqs = []
+        name_defs = {}
+        for seq, new_name in norm_seq_names.items():
+            uni_seqs.append((new_name, seq))
+            name_defs[new_name] = trans_names[seq]
+
+        out_tree = run_FastTree(uni_seqs, alphabet=alphabet, tmp_path=tmp_path)
+
+        tax_set = out_tree.taxon_set
+        for old_name, new_names in name_defs.items():
+            node = out_tree.find_node_with_taxon_label(old_name)
+            if node:
+                names = iter(new_names)
+                node.taxon.label = names.next()
+                parent = node.parent_node
+                edge_dist = node.edge.length
+                for name in names:
+                    parent.new_child(taxon=tax_set.new_taxon(label=name),
+                                     edge_length=edge_dist)
+
+    else:
+        cmd = '/home/will/PySeqUtils/FastTree %(alpha)s -quiet %(path)s'
+
+        with NTF(dir=tmp_path, suffix='.fasta') as handle:
+            fasta_writer(handle, seqs)
+            handle.flush()
+            os.fsync(handle)
+            tdict = {
+                'alpha': '-nt' if alphabet == generic_dna else '',
+                'path': handle.name
+            }
+            cmd_list = shlex.split(cmd % tdict)
+            tree_str = check_output(cmd_list)
+        return dendropy.Tree(stream=StringIO(tree_str), schema='newick')
 
 
 def fast_tree(seqs, alphabet=generic_protein, tmp_path=None, rm_dir=True):
