@@ -9,7 +9,7 @@ import shlex
 from tempfile import mkdtemp
 from tempfile import NamedTemporaryFile as NTF
 import shutil
-from GeneralSeqTools import write_nexus_alignment
+from GeneralSeqTools import write_nexus_alignment, fasta_writer
 import csv
 from StringIO import StringIO
 from dendropy.treecalc import PatristicDistanceMatrix
@@ -472,7 +472,48 @@ def phylip_tree(seqs, alphabet=generic_protein, tmp_path=None, rm_dir=True):
     return out_tree, process_phylip_dist_mat(dist_data, trans_names)
 
 
-def phylip_tree_collapse_unique(seqs, alphabet=generic_protein, tmp_path=None, rm_dir=True):
+def fast_tree(seqs, alphabet=generic_protein, tmp_path=None, rm_dir=True):
+    """A dropin replacement for phylip that is significantly faster for larger
+     sequence alignments.
+
+    seqs -- A sequence of (name, sequence) tuples.
+    alphabet -- A Bio.Alphabet object indicating the the sequence type.
+                Currently this only accepts generic_protein and
+                generic_dna
+    tmp_path=None -- A path to create the temporary directories. **Does NOTHING**
+    rm_dir=True -- Whether to remove the temporary directory after completion. **Does NOTHING**
+
+    returns:
+    tree -- A dendropy tree object of the resulting tree.
+    dist_data -- The a dict() of phylogentic distances between all pairs.
+    """
+
+    cmd = '/home/will/PySeqUtils/FastTree %(alpha)s -quiet %(path)s'
+
+    with NTF(suffix='.fasta') as handle:
+        fasta_writer(handle, seqs)
+        handle.flush()
+        os.fsync(handle)
+        tdict = {
+            'alpha': '-nt' if alphabet == generic_dna else '',
+            'path': handle.name
+        }
+        cmd_list = shlex.split(cmd % tdict)
+        tree_str = check_output(cmd_list)
+
+    out_tree = dendropy.Tree(stream=StringIO(tree_str), schema='newick')
+
+    mat_calc = dendropy.treecalc.PatristicDistanceMatrix(out_tree)
+    dmat = {}
+    for p1, p2 in combinations(out_tree.taxon_set, 2):
+        dist = mat_calc(p1, p2)
+        dmat[(p1.label, p2.label)] = dist
+        dmat[(p2.label, p1.label)] = dist
+
+    return out_tree, dmat
+
+
+def phylip_tree_collapse_unique(seqs, alphabet=generic_protein, tmp_path=None, rm_dir=True, use_fast=True):
     """Uses the Phylip program to generate a tree from the input sequences.
     However, this one intelligently deals with repeated sequences.
 
@@ -504,8 +545,12 @@ def phylip_tree_collapse_unique(seqs, alphabet=generic_protein, tmp_path=None, r
     if len(uni_nseqs) < 4:
         raise ValueError('Too few unique sequences')
 
-    out_tree, dist_mat = phylip_tree(uni_nseqs, alphabet=alphabet,
-                                     tmp_path=tmp_path, rm_dir=rm_dir)
+    if use_fast:
+        out_tree, dist_mat = fast_tree(uni_nseqs, alphabet=alphabet,
+                                       tmp_path=tmp_path, rm_dir=rm_dir)
+    else:
+        out_tree, dist_mat = phylip_tree(uni_nseqs, alphabet=alphabet,
+                                         tmp_path=tmp_path, rm_dir=rm_dir)
 
     tax_set = out_tree.taxon_set
     for old_name, new_names in name_defs.items():
