@@ -472,25 +472,11 @@ def phylip_tree(seqs, alphabet=generic_protein, tmp_path=None, rm_dir=True):
     return out_tree, process_phylip_dist_mat(dist_data, trans_names)
 
 
-def fast_tree(seqs, alphabet=generic_protein, tmp_path=None, rm_dir=True):
-    """A dropin replacement for phylip that is significantly faster for larger
-     sequence alignments.
-
-    seqs -- A sequence of (name, sequence) tuples.
-    alphabet -- A Bio.Alphabet object indicating the the sequence type.
-                Currently this only accepts generic_protein and
-                generic_dna
-    tmp_path=None -- A path to create the temporary directories. **Does NOTHING**
-    rm_dir=True -- Whether to remove the temporary directory after completion. **Does NOTHING**
-
-    returns:
-    tree -- A dendropy tree object of the resulting tree.
-    dist_data -- The a dict() of phylogentic distances between all pairs.
-    """
+def run_FastTree(seqs, alphabet=generic_protein, tmp_path=None):
 
     cmd = '/home/will/PySeqUtils/FastTree %(alpha)s -quiet %(path)s'
 
-    with NTF(suffix='.fasta') as handle:
+    with NTF(dir=tmp_path, suffix='.fasta') as handle:
         fasta_writer(handle, seqs)
         handle.flush()
         os.fsync(handle)
@@ -501,8 +487,26 @@ def fast_tree(seqs, alphabet=generic_protein, tmp_path=None, rm_dir=True):
         cmd_list = shlex.split(cmd % tdict)
         tree_str = check_output(cmd_list)
 
-    out_tree = dendropy.Tree(stream=StringIO(tree_str), schema='newick')
+    return dendropy.Tree(stream=StringIO(tree_str), schema='newick')
 
+
+def fast_tree(seqs, alphabet=generic_protein, tmp_path=None, rm_dir=True):
+    """A dropin replacement for phylip that is significantly faster for larger
+     sequence alignments.
+
+    seqs -- A sequence of (name, sequence) tuples.
+    alphabet -- A Bio.Alphabet object indicating the the sequence type.
+                Currently this only accepts generic_protein and
+                generic_dna
+    tmp_path=None -- A path to create the temporary directories.
+    rm_dir=True -- Whether to remove the temporary directory after completion. **Does NOTHING**
+
+    returns:
+    tree -- A dendropy tree object of the resulting tree.
+    dist_data -- The a dict() of phylogentic distances between all pairs.
+    """
+
+    out_tree = run_FastTree(seqs, alphabet=alphabet, tmp_path=tmp_path)
     mat_calc = dendropy.treecalc.PatristicDistanceMatrix(out_tree)
     dmat = {}
     for p1, p2 in combinations(out_tree.taxon_set, 2):
