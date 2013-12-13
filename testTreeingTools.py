@@ -7,6 +7,7 @@ import dendropy
 from StringIO import StringIO
 from itertools import ifilter
 
+
 def test_generate_mrbayes_nexus():
 
     cmd = TreeingTools.generate_mrbayes_nexus('/path/to/alignment',
@@ -15,11 +16,10 @@ def test_generate_mrbayes_nexus():
               'set autoclose=yes nowarn=yes;',
               'execute /path/to/alignment;',
               'prset aamodelpr = mixed;',
-              'mcmc nchains = 3 ngen = 50000 samplefreq=1000 diagnfreq=100000 printfreq=100000 file=/path/to/output;',
               'sump;',
               'sumt;']
     for check in checks:
-        yield ok_, check in cmd
+        yield ok_, check in cmd, 'Missing: "%s"' % check
 
 
 def test_make_mrbayes_trees():
