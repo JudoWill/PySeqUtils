@@ -149,7 +149,7 @@ def make_mrbayes_trees(input_seqs, mrbayes_kwargs=None, is_aa=True):
         align_file = tmpdir + 'seqalign.nxs'
         mrbayes_cmd_file = tmpdir + 'analysis.nxs'
         multi_prob = tmpdir + 'seqalign.nxs.trprobs'
-        cons_file = tmpdir + 'seqalign.nxs.con.tre'
+        cons_file = tmpdir + 'seqalign.nxs.con'
 
         with open(align_file, 'w') as handle:
             write_nexus_alignment(cleaned_seqs, handle, is_aa=is_aa)
@@ -159,11 +159,12 @@ def make_mrbayes_trees(input_seqs, mrbayes_kwargs=None, is_aa=True):
                 mrbayes_kwargs = {}
             txt = generate_mrbayes_nexus(align_file, align_file, is_aa=is_aa, **mrbayes_kwargs)
             handle.write(txt)
-
+        print 'before', os.listdir(tmpdir)
         cmd = 'mb ' + mrbayes_cmd_file
         print cmd
         check_output(shlex.split(cmd))
-
+        print 'after', os.listdir(tmpdir)
+        print open(tmpdir + 'seqalign.nxs.con').read()
         with open(multi_prob) as handle:
             trees = dendropy.TreeList.get_from_stream(handle, schema='nexus')
         with open(cons_file) as handle:
