@@ -4,7 +4,7 @@ __author__ = 'will'
 import os
 import dendropy
 import contextlib
-from subprocess import check_output, check_call
+from subprocess import check_output, check_call, PIPE
 import shlex
 from tempfile import mkdtemp
 from tempfile import NamedTemporaryFile as NTF
@@ -249,7 +249,8 @@ def run_bats(treeset, trop_dict, nreps=5000):
         os.fsync(handle)
         cmd = 'java -jar /home/will/BaTS_beta_build2.jar single %s %i %i'
         logging.info('Running BATS')
-        out = check_output(shlex.split(cmd % (handle.name, nreps, nstates)))
+        out = check_output(shlex.split(cmd % (handle.name, nreps, nstates)),
+                           stderr=PIPE)
         logging.info('Sucessful BATS')
 
     handle = StringIO(out)
