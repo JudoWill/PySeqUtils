@@ -374,7 +374,7 @@ def make_phylip_seq_dist_mat(inseqs, alphabet, tmp_path=None, rm_dir=True):
             else:
                 raise KeyError('Unknown alphabet.')
             cmd = shlex.split(cmd)
-            check_call(cmd, stdin=cmd_handle)
+            check_call(cmd, stdin=cmd_handle, stdout=PIPE)
 
             with open('outfile') as handle:
                 dist_data = handle.read()
@@ -440,7 +440,7 @@ def make_phylip_tree(dist_data, tmp_path=None, rm_dir=True):
             with open('infile', 'w') as handle:
                 handle.write(dist_data)
             cmd = shlex.split('phylip neighbor')
-            check_call(cmd, stdin = cmd_handle)
+            check_call(cmd, stdin=cmd_handle, stdout=PIPE)
             with open('outtree') as handle:
                 tree = dendropy.Tree.get_from_stream(handle, schema='newick')
                 return tree
