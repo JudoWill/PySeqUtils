@@ -22,21 +22,52 @@ def test_generate_mrbayes_nexus():
         yield ok_, check in cmd, 'Missing: "%s"' % check
 
 
+def tree_seqs():
+
+    seqs = [('test1',   'ATTTCTATCTATA'),
+            ('test1-1', 'ATTTtTATtTATA'),
+            ('test1-2', 'ATcTtTATtTATA'),
+            ('test1-3', 'ATTctTATtTATA'),
+            ('test1-4', 'ATTcCTATCTATA'),
+            ('test2',   'TTTTCCCGGTGTG'),
+            ('test2-1', 'TTTTCCCGtTGgG'),
+            ('test2-2', 'TTTTCgCGtTGgG'),
+            ('test2-3', 'TTTTCCgGtTGgG'),
+            ('test2-4', 'TTTTCCgGtTcTG'),
+            ('test3',   'AATGATCGATTTA'),
+            ('test3-1', 'AcTGATgGATTTA'),
+            ('test3-2', 'AcTGAggGATTTA'),
+            ('test3-3', 'AcTGATgGATgTA'),
+            ('test3-4', 'AATGtTgGAgTTA')]
+    return seqs
+
+
+def check_tree(tree):
+
+    with open('/tmp/ascii_tree.txt', 'w') as handle:
+        handle.write(tree.as_ascii_plot())
+
+    for name in ['test1', 'test2', 'test3']:
+        node = tree.find_node_with_taxon_label(name)
+        children = [node for node in node.sister_nodes() if node.taxon]
+        children += [node for node in node.child_nodes() if node.taxon]
+        yield ok_, len(children) > 0, '%s did not have the right number of children: %i' % (name, len(children))
+        for child in children:
+            if child.taxon:
+                yield ok_, child.taxon.label.startswith(name), 'The tree is wrong!'
+
+
 def test_make_mrbayes_trees():
 
-    seqs = [('test1', 'ATTTCTATCTATA'),
-            ('test2', 'ATTTCGATCTATA'),
-            ('test3', 'ATTTCGATGTATA'),
-            ('test4', 'ATCTCGATGTATA'),
-            ('test5', 'ATCTCGATGTATA'),
-            ('test6', 'ATCTCGATGTAAA'),
-            ('test7', 'ATCTCGATGTTAA'),
-            ('test8', 'ATCTCGATGTTAT')]
+    seqs = tree_seqs()
 
     con_tree, all_trees = TreeingTools.make_mrbayes_trees(seqs, is_aa=False)
-    for name, seq in seqs:
-        node = con_tree.find_node_with_taxon_label(name)
-        yield ok_, node is not None
+    for tst in check_tree(con_tree):
+        yield tst
+
+def test_phylip_tree():
+
+    pass
 
 
 def test_bats_format_nexus():
