@@ -502,6 +502,7 @@ def run_FastTree(seqs, alphabet=generic_protein, tmp_path=None, uniq_seqs=False)
                 for name in names:
                     parent.new_child(taxon=tax_set.new_taxon(label=name),
                                      edge_length=edge_dist)
+        return out_tree
 
     else:
         cmd = '/home/will/PySeqUtils/FastTree %(alpha)s -quiet %(path)s'
