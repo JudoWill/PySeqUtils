@@ -2,6 +2,7 @@ __author__ = 'will'
 
 from nose.tools import ok_, eq_
 
+from Bio.Alphabet import generic_dna, generic_protein
 import TreeingTools
 import dendropy
 from StringIO import StringIO
@@ -51,7 +52,7 @@ def check_tree(tree):
         node = tree.find_node_with_taxon_label(name)
         children = [node for node in node.sister_nodes() if node.taxon]
         children += [node for node in node.child_nodes() if node.taxon]
-        yield ok_, len(children) > 0, '%s did not have the right number of children: %i' % (name, len(children))
+        #yield ok_, len(children) > 0, '%s did not have the right number of children: %i' % (name, len(children))
         for child in children:
             if child.taxon:
                 yield ok_, child.taxon.label.startswith(name), 'The tree is wrong!'
@@ -60,14 +61,25 @@ def check_tree(tree):
 def test_make_mrbayes_trees():
 
     seqs = tree_seqs()
-
     con_tree, all_trees = TreeingTools.make_mrbayes_trees(seqs, is_aa=False)
     for tst in check_tree(con_tree):
         yield tst
 
+
 def test_phylip_tree():
 
-    pass
+    seqs = tree_seqs()
+    tree, _ = TreeingTools.phylip_tree(seqs, alphabet=generic_dna)
+    for tst in check_tree(tree):
+        yield tst
+
+
+def test_fast_tree():
+
+    seqs = tree_seqs()
+    tree = TreeingTools.run_FastTree(seqs, alphabet=generic_dna)
+    for tst in check_tree(tree):
+        yield tst
 
 
 def test_bats_format_nexus():
