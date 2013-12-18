@@ -1,9 +1,11 @@
 __author__ = 'will'
 from Bio.Seq import Seq
 from Bio import Motif
+from Bio.Alphabet import IUPAC
 from itertools import groupby
 from operator import methodcaller
 from StringIO import StringIO
+import numpy as np
 import os
 import GeneralSeqTools
 
@@ -69,3 +71,18 @@ def slice_to_ref(base_seq, ref, start, stop):
         if ref_pos == stop:
             return out_seq
 
+
+def simple_score_pwm(seq, PWM, include_revc=True):
+
+    bseq = Seq(seq, alphabet=IUPAC.unambiguous_dna)
+    scores = PWM.scanPWM(bseq)
+    bpos = np.argmax(scores)
+    bscore = scores[bpos]
+
+    if include_revc:
+        rev_scores = PWM.reverse_complement().scanPWM(bseq)
+        if np.max(rev_scores) > bscore:
+            bscore = np.max(rev_scores)
+            bpos = np.argmax(rev_scores)
+    nseq = seq[bpos:(bpos+len(PWM))]
+    return bscore, bpos, nseq
