@@ -43,6 +43,7 @@ def test_align_to_ref():
     yield eq_, res_base.lower(), out_base.lower()
     yield eq_, res_ref.lower(), out_ref.lower()
     yield ok_, (test_base, test_ref) in TFSeqTools.align_to_ref
+    yield eq_, TFSeqTools.align_to_ref[(test_base, test_ref)], (out_base, out_ref)
 
 
 def test_slice_to_ref():
