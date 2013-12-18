@@ -51,3 +51,18 @@ def align_to_ref(base_seq, ref_seq):
     seqs = [('query', base_seq), ('ref', ref_seq)]
     aligned = dict(GeneralSeqTools.call_muscle(seqs))
     return aligned['query'], aligned['ref']
+
+
+def slice_to_ref(base_seq, ref, start, stop):
+
+    base_align, ref_align = align_to_ref(base_seq, ref)
+
+    ref_pos = 0
+    out_seq = ''
+    for b_let, r_let in zip(base_align, ref_align):
+        ref_pos += r_let != '-'
+        if ref_pos > start:
+            out_seq += b_let
+        if ref_pos == stop:
+            return out_seq
+
