@@ -29,3 +29,17 @@ def test_load_pwms():
 
     yield ok_, all_found, 'Missing: ' + ', '.join(missing)
     yield ok_, all_correct, 'Wrong: ' + ', '.join(wrongs)
+
+
+def test_align_to_ref():
+
+    test_base = 'ACTGTTTTGCGTA'
+    test_ref = 'ACTGTTgTTGCGTA'
+
+    res_base = 'ACTGTT-TTGCGTA'
+    res_ref = 'ACTGTTgTTGCGTA'
+
+    out_base, out_ref = TFSeqTools.align_to_ref(test_base, test_ref)
+    yield eq_, res_base.lower(), out_base.lower()
+    yield eq_, res_ref.lower(), out_ref.lower()
+    yield ok_, (test_base, test_ref) in TFSeqTools.align_to_ref

@@ -5,6 +5,20 @@ from itertools import groupby
 from operator import methodcaller
 from StringIO import StringIO
 import os
+import GeneralSeqTools
+
+
+class memoize(dict):
+
+    def __init__(self, func):
+        self.func = func
+
+    def __call__(self, *args):
+        return self[args]
+
+    def __missing__(self, key):
+        result = self[key] = self.func(*key)
+        return result
 
 
 def Load_PWMS(path=None):
@@ -26,3 +40,14 @@ def Load_PWMS(path=None):
         path = os.path.join(direc, 'HIVDBFiles', 'Jaspar_PWMs.txt')
 
     return dict(yield_motifs(path))
+
+
+@memoize
+def align_to_ref(base_seq, ref_seq):
+    """Aligns a sequence to the reference and caches the result for fast
+     lookup later. Returns a tuple (base_seq, ref_seq) properly aligned.
+    """
+
+    seqs = [('query', base_seq), ('ref', ref_seq)]
+    aligned = dict(GeneralSeqTools.call_muscle(seqs))
+    return aligned['query'], aligned['ref']
