@@ -55,6 +55,8 @@ def align_to_ref(base_seq, ref_seq):
 
 
 def slice_to_ref(base_seq, ref, start, stop):
+    """Slices the query-sequence based on the reference sequence provided.
+    """
 
     base_align, ref_align = align_to_ref(base_seq, ref)
 
