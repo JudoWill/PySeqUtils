@@ -10,7 +10,8 @@ import GeneralSeqTools
 
 class memoize(dict):
 
-    def __init__(self, func):
+    def __init__(self, func, **kwargs):
+        super(memoize, self).__init__(**kwargs)
         self.func = func
 
     def __call__(self, *args):
