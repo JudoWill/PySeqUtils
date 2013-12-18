@@ -40,10 +40,17 @@ def test_align_to_ref():
     res_ref = 'ACTGTTgTTGCGTA'
 
     out_base, out_ref = TFSeqTools.align_to_ref(test_base, test_ref)
-    yield eq_, res_base.lower(), out_base.lower()
-    yield eq_, res_ref.lower(), out_ref.lower()
-    yield ok_, (test_base, test_ref) in TFSeqTools.align_to_ref
-    yield eq_, TFSeqTools.align_to_ref[(test_base, test_ref)], (out_base, out_ref)
+    tests = [(eq_, res_base.lower(), out_base.lower(),
+              'Query alignment was wrong!'),
+             (eq_, res_ref.lower(), out_ref.lower(),
+              'Reference alignment was wrong!'),
+             (ok_, (test_base, test_ref) in TFSeqTools.align_to_ref,
+              'Memoization didnt save properly'),
+             (eq_, TFSeqTools.align_to_ref[(test_base, test_ref)],
+              (out_base, out_ref), 'Memoization saved wrong data!')
+             ]
+    for tup in tests:
+        yield tup
 
 
 def test_slice_to_ref():
