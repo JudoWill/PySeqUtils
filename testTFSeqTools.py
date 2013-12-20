@@ -67,3 +67,22 @@ def test_slice_to_ref():
     expect = 'TTgggTT'
     res = TFSeqTools.slice_to_ref(test_base, test_ref, start, stop)
     yield eq_, expect.lower(), res.lower(), 'Aligned Slice is wrong!'
+
+
+def test_simple_score_pwm():
+
+    pwm_dict = TFSeqTools.Load_PWMS()
+    mot = pwm_dict['arnt']
+    #A   4 19  0  0  0  0
+    #C  16  0 20  0  0  0
+    #G   0  1  0 20  0 20
+    #T   0  0  0  0 20  0
+
+    tseq = 'AAACACGTGAAAA'
+
+    cor_seq = 'CACGTG'
+    cor_pos = tseq.find(cor_seq)
+
+    _, bpos, nseq = TFSeqTools.simple_score_pwm(tseq, mot)
+    yield eq_, bpos, cor_pos, 'Wrong position found!'
+    yield eq_, nseq, cor_seq, 'Wrong sequence found!'
