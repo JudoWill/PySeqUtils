@@ -4,7 +4,7 @@ python:
 install:
   - 'sudo apt-get install $(grep -vE "^\s*#" package_list.txt  | tr "\n" " ")'
   - 'pip install numpy --quiet'
-  - 'pip install scipy --quiet'
+  - 'pip install scipy'
   - 'pip install pandas --quiet'
   - 'pip install celery --quiet'
   - 'pip install biopython --quiet'
