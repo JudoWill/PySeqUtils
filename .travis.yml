@@ -3,6 +3,7 @@ python:
   - '2.7'
 install:
   - 'sudo apt-get install $(grep -vE "^\s*#" package_list.txt  | tr "\n" " ")'
+  - 'pip install numpy scipy --quiet'
   - 'sudo Rscript install_R_packages.R'
   - 'pip install -r requirements.txt --use-mirrors'
 script: nosetests
