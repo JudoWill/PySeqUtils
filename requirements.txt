@@ -10,5 +10,5 @@ dendropy
 pymongo
 celery
 rpy2
-sklearn
+scikit-learn
 matplotlib
