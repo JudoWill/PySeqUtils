@@ -6,8 +6,11 @@ install:
   - 'pip install numpy --quiet'
   - 'pip install scipy --quiet'
   - 'pip install pandas --quiet'
+  - 'pip install celery --quiet'
+  - 'pip install biopython --quiet'
+  - 'pip install scikit-learn --quiet'
   - 'chmod +x ./FastTree'
   - 'sudo Rscript install_R_packages.R'
-  - 'pip install -r requirements.txt --use-mirrors'
+  - 'pip install -r requirements.txt --use-mirrors --quiet'
 script: 'nosetests -v'
 cache: bundler
