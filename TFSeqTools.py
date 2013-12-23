@@ -49,6 +49,13 @@ def Load_PWMS(path=None):
 def align_to_ref(ref_seq, base_seq):
     """Aligns a sequence to the reference and caches the result for fast
      lookup later. Returns a tuple (base_seq, ref_seq) properly aligned.
+
+     ref_seq -- The reference sequence to use as a guide.
+     query_seq -- The query sequence.
+
+     Returns:
+     query_aln -- The aligned query sequence.
+     ref_aln -- The aligned reference sequence.
     """
 
     seqs = [('query', base_seq), ('ref', ref_seq)]
@@ -58,6 +65,13 @@ def align_to_ref(ref_seq, base_seq):
 
 def slice_to_ref(ref, start, stop, base_seq):
     """Slices the query-sequence based on the reference sequence provided.
+
+     ref_seq -- The reference sequence to use as a guide.
+     start, stop -- The start/stop positions to extract. In SLICE syntax!
+     query_seq -- The query sequence.
+
+     Returns:
+     clipped_seq -- The sequence clipped to the desired region.
     """
 
     base_align, ref_align = align_to_ref(ref, base_seq)
