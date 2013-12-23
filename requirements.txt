@@ -1,0 +1,14 @@
+nose
+mechanize
+pandas
+numpy
+scipy
+biopython
+futures
+bs4
+dendropy
+pymongo
+celery
+rpy2
+sklearn
+matplotlib
