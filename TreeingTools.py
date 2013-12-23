@@ -507,7 +507,7 @@ def run_FastTree(seqs, alphabet=generic_protein, tmp_path=None, uniq_seqs=False)
         return out_tree
 
     else:
-        cmd = 'FastTree %(alpha)s -quiet %(path)s'
+        base_path = os.path.dirname(__file__)
 
         with NTF(dir=tmp_path, suffix='.fasta') as handle:
             fasta_writer(handle, seqs)
@@ -517,7 +517,9 @@ def run_FastTree(seqs, alphabet=generic_protein, tmp_path=None, uniq_seqs=False)
                 'alpha': '-nt' if alphabet == generic_dna else '',
                 'path': handle.name
             }
-            cmd_list = shlex.split(cmd % tdict)
+            cmd = os.path.join(base_path,
+                               'FastTree %(alpha)s -quiet %(path)s' % tdict)
+            cmd_list = shlex.split(cmd)
             tree_str = check_output(cmd_list)
         return dendropy.Tree(stream=StringIO(tree_str), schema='newick')
 
