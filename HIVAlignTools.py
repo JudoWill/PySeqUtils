@@ -303,7 +303,7 @@ class BlastAligner(BaseEstimator, ClusterMixin):
 
 
 def get_seq(prot_name, typ):
-    trans_path = '/home/will/PySeqUtils/TransToolStuff/'
+    trans_path = 'TransToolStuff/'
     tmp = 'HIV1_ALL_2012_%s_%s.fasta' % (prot_name.lower(), typ.upper())
     with open(trans_path + tmp) as handle:
         return SeqTransformer.get_from_fasta_handle(handle)
@@ -378,7 +378,7 @@ def train_aligner(prot, path, train_type='pro', test_size=500, n_jobs=1, verbose
     return aligner
 
 
-def build_aligners(base_path='/home/will/PySeqUtils/TransToolStuff/dbs/',
+def build_aligners(base_path='TransToolStuff/dbs/',
                    verbose=1, n_jobs=1):
 
     prots = ['gag', 'vif',  'vpu',

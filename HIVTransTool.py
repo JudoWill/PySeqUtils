@@ -268,7 +268,7 @@ def region_linker(row, region_row):
     return None
 
 
-def load_region(path='/home/will/PySeqUtils/HIVDBFiles/HXB2RegionNames.csv'):
+def load_region(path='HIVDBFiles/HXB2RegionNames.csv'):
 
     region_dict = defaultdict(list)
     with open(path) as handle:
