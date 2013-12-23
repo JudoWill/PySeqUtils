@@ -5,7 +5,7 @@ numpy
 scipy
 biopython
 futures
-bs4
+beautifulsoup4
 dendropy
 pymongo
 celery
