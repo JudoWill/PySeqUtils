@@ -507,7 +507,7 @@ def run_FastTree(seqs, alphabet=generic_protein, tmp_path=None, uniq_seqs=False)
         return out_tree
 
     else:
-        cmd = '/home/will/PySeqUtils/FastTree %(alpha)s -quiet %(path)s'
+        cmd = 'FastTree %(alpha)s -quiet %(path)s'
 
         with NTF(dir=tmp_path, suffix='.fasta') as handle:
             fasta_writer(handle, seqs)
