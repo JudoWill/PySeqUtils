@@ -230,9 +230,6 @@ def process_seqs(input_seqs, threads=5, extract_regions=False, known_names=None)
         if row['Name'] != prev_name:
             prev_name = row['Name']
             name_count += 1
-            if (name_count < 5) or (name_count % 1000) == 0:
-                print 'Processed %i Sequences of %i' % (name_count, known_names)
-                #logging.warning()
         yield row
         for region_row in region_dict[row['RegionName']]:
             nrow = region_linker(deepcopy(row), region_row)
