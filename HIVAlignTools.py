@@ -7,7 +7,7 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 from GeneralSeqTools import fasta_reader, fasta_writer
-from subprocess import check_call, STDOUT
+from subprocess import check_call, STDOUT, PIPE
 import shlex
 from Bio.Blast import NCBIXML
 from Bio.Blast.Applications import NcbiblastxCommandline, NcbiblastnCommandline
@@ -197,7 +197,7 @@ def score_seq(known, guess, gapopen=10, gapextend=1):
                               'ge': gapextend
                               }
                 cmd_list = shlex.split(cmd % param_dict)
-                check_call(cmd_list, stdout=open(os.devnull, 'w'), stderr=STDOUT)
+                check_call(cmd_list, stdout=PIPE, stderr=STDOUT)
                 for line in out_handle:
                     parts = line.split()
                     if len(parts) == 4:
