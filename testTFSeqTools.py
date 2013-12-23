@@ -39,14 +39,14 @@ def test_align_to_ref():
     res_base = 'ACTGTT-TTGCGTA'
     res_ref = 'ACTGTTgTTGCGTA'
 
-    out_base, out_ref = TFSeqTools.align_to_ref(test_base, test_ref)
+    out_base, out_ref = TFSeqTools.align_to_ref(test_ref, test_base)
     tests = [(eq_, res_base.lower(), out_base.lower(),
               'Query alignment was wrong!'),
              (eq_, res_ref.lower(), out_ref.lower(),
               'Reference alignment was wrong!'),
-             (ok_, (test_base, test_ref) in TFSeqTools.align_to_ref,
+             (ok_, (test_ref, test_base) in TFSeqTools.align_to_ref,
               'Memoization didnt save properly'),
-             (eq_, TFSeqTools.align_to_ref[(test_base, test_ref)],
+             (eq_, TFSeqTools.align_to_ref[(test_ref, test_base)],
               (out_base, out_ref), 'Memoization saved wrong data!')
              ]
     for tup in tests:
@@ -61,11 +61,11 @@ def test_slice_to_ref():
     start = 4
     stop = 8
 
-    res = TFSeqTools.slice_to_ref(test_ref, test_ref, start, stop)
+    res = TFSeqTools.slice_to_ref(test_ref, start, stop, test_ref)
     yield eq_, test_ref[4:8].lower(), res.lower(), 'Simple Slice is wrong!'
 
     expect = 'TTgggTT'
-    res = TFSeqTools.slice_to_ref(test_base, test_ref, start, stop)
+    res = TFSeqTools.slice_to_ref(test_ref, start, stop, test_base)
     yield eq_, expect.lower(), res.lower(), 'Aligned Slice is wrong!'
 
 
@@ -83,6 +83,6 @@ def test_simple_score_pwm():
     cor_seq = 'CACGTG'
     cor_pos = tseq.find(cor_seq)
 
-    _, bpos, nseq = TFSeqTools.simple_score_pwm(tseq, mot)
+    _, bpos, nseq = TFSeqTools.simple_score_pwm(mot, tseq)
     yield eq_, bpos, cor_pos, 'Wrong position found!'
     yield eq_, nseq, cor_seq, 'Wrong sequence found!'

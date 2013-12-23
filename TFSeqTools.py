@@ -46,7 +46,7 @@ def Load_PWMS(path=None):
 
 
 @memoize
-def align_to_ref(base_seq, ref_seq):
+def align_to_ref(ref_seq, base_seq):
     """Aligns a sequence to the reference and caches the result for fast
      lookup later. Returns a tuple (base_seq, ref_seq) properly aligned.
     """
@@ -56,11 +56,11 @@ def align_to_ref(base_seq, ref_seq):
     return aligned['query'], aligned['ref']
 
 
-def slice_to_ref(base_seq, ref, start, stop):
+def slice_to_ref(ref, start, stop, base_seq):
     """Slices the query-sequence based on the reference sequence provided.
     """
 
-    base_align, ref_align = align_to_ref(base_seq, ref)
+    base_align, ref_align = align_to_ref(ref, base_seq)
 
     ref_pos = 0
     out_seq = ''
