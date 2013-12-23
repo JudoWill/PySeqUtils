@@ -5,3 +5,4 @@ install:
   - 'sudo apt-get install $(grep -vE "^\s*#" package_list.txt  | tr "\n" " ")'
   - 'pip install -r requirements.txt --use-mirrors'
 script: nosetests
+cache: bundler
