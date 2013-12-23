@@ -72,7 +72,20 @@ def slice_to_ref(base_seq, ref, start, stop):
             return out_seq
 
 
-def simple_score_pwm(seq, PWM, include_revc=True):
+def simple_score_pwm(PWM, seq, include_revc=True):
+    """Scans a sequence with a PWM and returns the best position, sequence,
+     and score.
+
+     PWM -- A Bio.Motif object
+     seq -- A sequence to scan
+     include_revc=True -- Include a scan with the reverse-complement of the
+                          motif.
+
+     Returns:
+     score -- The best score for the PWM found in the region.
+     pos -- The starting position of the best scoring motif.
+     matched_seq --
+    """
 
     bseq = Seq(seq, alphabet=IUPAC.unambiguous_dna)
     scores = PWM.scanPWM(bseq)
