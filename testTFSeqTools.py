@@ -2,6 +2,7 @@ __author__ = 'will'
 from nose.tools import ok_, eq_
 import os
 import TFSeqTools
+import numpy as np
 
 
 def test_load_pwms():
@@ -26,9 +27,18 @@ def test_load_pwms():
                 elif 'motif' not in str(type(pwm_dict[name])):
                     all_correct = False
                     wrongs.append(name)
+                yield check_motif_correct, name, pwm_dict[name]
+                yield check_motif_correct, name+'-R', pwm_dict[name+'-R']
 
     yield ok_, all_found, 'Missing: ' + ', '.join(missing)
     yield ok_, all_correct, 'Wrong: ' + ', '.join(wrongs)
+
+
+def check_motif_correct(name, mot):
+
+    np.testing.assert_almost_equal(mot.pssm.calculate(mot.consensus),
+                                   mot.pssm.max, 3,
+                                   err_msg='%s did not load correctly!' % name)
 
 
 def test_reverse_motif():

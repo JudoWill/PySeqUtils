@@ -49,7 +49,7 @@ def Load_PWMS(path=None):
                     tmp = ''.join(lines)
                     mot = motifs.read(StringIO(tmp), 'pfm')
                     yield name, mot
-                    yield name+'-R', mot.reverse_complement()
+                    yield name+'-R', true_motif_rev_complement(mot)
 
     if path is None:
         direc = os.path.dirname(os.path.abspath(__file__))
@@ -120,7 +120,7 @@ def simple_score_pwm(PWM, seq, include_revc=True):
     bscore = scores[bpos]
 
     if include_revc:
-        rev_scores = PWM.reverse_complement().pssm.calculate(bseq)
+        rev_scores = true_motif_rev_complement(PWM).pssm.calculate(bseq)
         if np.max(rev_scores) > bscore:
             bscore = np.max(rev_scores)
             bpos = np.argmax(rev_scores)
