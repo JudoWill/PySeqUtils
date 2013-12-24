@@ -3,7 +3,7 @@ python:
   - '2.7'
 before_install:
   - 'sudo apt-get install python-numpy-dev'
-  - 'sudo apt-get install python-scipy-dev'
+  - 'sudo apt-get install python-scipy'
 install:
   - 'sudo apt-get install $(grep -vE "^\s*#" package_list.txt  | tr "\n" " ")'
   - 'ln -s /usr/lib/python2.7/dist-packages/numpy ~/virtualenv/python2.7/lib/python2.7/site-packages/'
