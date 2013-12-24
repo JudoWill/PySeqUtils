@@ -2,6 +2,7 @@ __author__ = 'will'
 from nose.tools import ok_, eq_
 import os
 import TFSeqTools
+import numpy as np
 
 
 def test_load_pwms():
@@ -23,12 +24,37 @@ def test_load_pwms():
                 elif name + '-R' not in pwm_dict:
                     all_found = False
                     missing.append(name)
-                elif 'Bio.Motif._Motif.Motif' not in str(type(pwm_dict[name])):
+                elif 'motif' not in str(type(pwm_dict[name])):
                     all_correct = False
                     wrongs.append(name)
+                yield check_motif_correct, name, pwm_dict[name]
+                yield check_motif_correct, name+'-R', pwm_dict[name+'-R']
 
     yield ok_, all_found, 'Missing: ' + ', '.join(missing)
     yield ok_, all_correct, 'Wrong: ' + ', '.join(wrongs)
+
+
+def check_motif_correct(name, mot):
+
+    np.testing.assert_almost_equal(mot.pssm.calculate(mot.consensus),
+                                   mot.pssm.max, 3,
+                                   err_msg='%s did not load correctly!' % name)
+
+
+def test_reverse_motif():
+
+    pwm_dict = TFSeqTools.Load_PWMS()
+    for key, mot in pwm_dict.items():
+        if not key.endswith('-R'):
+            yield check_rev_mot, key, mot
+
+
+def check_rev_mot(key, mot):
+
+    rmot = TFSeqTools.true_motif_rev_complement(mot)
+    rscore = rmot.pssm.calculate(rmot.consensus)
+    fscore = mot.pssm.calculate(mot.consensus)
+    eq_(rscore, fscore, '%s was not reversed properly!' % key)
 
 
 def test_align_to_ref():
