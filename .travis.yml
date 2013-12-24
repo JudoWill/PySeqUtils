@@ -7,7 +7,7 @@ before_install:
   - 'sudo apt-get install python-scipy'
   - 'sudo apt-get install python-matplotlib'
   - 'virtualenv willsenv --system-site-packages'
-  - 'source bin/activate'
+  - 'source willsenv/bin/activate'
   - 'pip --version'
 install:
   - 'pip install pandas --quiet'
