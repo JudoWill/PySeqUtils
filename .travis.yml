@@ -6,7 +6,7 @@ before_install:
   - 'sudo apt-get install python-numpy-dev'
   - 'sudo apt-get install python-scipy'
   - 'sudo apt-get install python-matplotlib'
-  - 'virtualenv willsenv --system-site-pacages'
+  - 'virtualenv willsenv --system-site-packages'
   - 'source bin/activate'
   - 'pip --version'
 install:
