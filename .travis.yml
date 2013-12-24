@@ -14,6 +14,6 @@ install:
   - 'pip install scikit-learn --quiet'
   - 'chmod +x ./FastTree'
   - 'sudo Rscript install_R_packages.R'
-  - 'pip install -r requirements.txt --use-mirrors --quiet'
+  - 'pip install -r requirements.txt --use-mirrors'
 script: 'nosetests -v'
 cache: bundler
