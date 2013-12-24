@@ -31,6 +31,22 @@ def test_load_pwms():
     yield ok_, all_correct, 'Wrong: ' + ', '.join(wrongs)
 
 
+def test_reverse_motif():
+
+    pwm_dict = TFSeqTools.Load_PWMS()
+    for key, mot in pwm_dict.items():
+        if not key.endswith('-R'):
+            yield check_rev_mot, key, mot
+
+
+def check_rev_mot(key, mot):
+
+    rmot = TFSeqTools.true_motif_rev_complement(mot)
+    rscore = rmot.pssm.calculate(rmot.consensus)
+    fscore = mot.pssm.calculate(mot.consensus)
+    eq_(rscore, fscore, '%s was not reversed properly!' % key)
+
+
 def test_align_to_ref():
 
     test_base = 'ACTGTTTTGCGTA'

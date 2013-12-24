@@ -2,12 +2,14 @@ __author__ = 'will'
 from Bio.Seq import Seq
 from Bio import motifs
 from Bio.Alphabet import IUPAC
+from Bio.motifs.matrix import FrequencyPositionMatrix
 from itertools import groupby
 from operator import methodcaller
 from StringIO import StringIO
 import numpy as np
 import os
 import GeneralSeqTools
+from copy import deepcopy
 
 
 class memoize(dict):
@@ -22,6 +24,17 @@ class memoize(dict):
     def __missing__(self, key):
         result = self[key] = self.func(*key)
         return result
+
+
+def true_motif_rev_complement(inmot):
+    """Performs a reverse complment on a motif and properly fixes the
+     counts so it will continue to scan sequences properly!
+    """
+
+    rmot = inmot.reverse_complement()
+    rmot.counts = FrequencyPositionMatrix(rmot.alphabet,
+                                          inmot.counts.reverse_complement())
+    return rmot
 
 
 def Load_PWMS(path=None):
@@ -102,12 +115,12 @@ def simple_score_pwm(PWM, seq, include_revc=True):
     """
 
     bseq = Seq(seq, alphabet=IUPAC.unambiguous_dna)
-    scores = PWM.scanPWM(bseq)
+    scores = PWM.pssm.calculate(bseq)
     bpos = np.argmax(scores)
     bscore = scores[bpos]
 
     if include_revc:
-        rev_scores = PWM.reverse_complement().scanPWM(bseq)
+        rev_scores = PWM.reverse_complement().pssm.calculate(bseq)
         if np.max(rev_scores) > bscore:
             bscore = np.max(rev_scores)
             bpos = np.argmax(rev_scores)
