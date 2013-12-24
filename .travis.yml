@@ -4,10 +4,12 @@ python:
 before_install:
   - 'sudo apt-get install python-numpy-dev'
   - 'sudo apt-get install python-scipy'
+  - 'sudo apt-get install python-matplotlib'
 install:
   - 'sudo apt-get install $(grep -vE "^\s*#" package_list.txt  | tr "\n" " ")'
   #- 'ln -s /usr/lib/python2.7/dist-packages/numpy ~/virtualenv/python2.7/lib/python2.7/site-packages/'
-  #- 'ln -s /usr/lib/python2.7/dist-packages/scipy ~/virtualenv/python2.7/lib/python2.7/site-packages/'
+  - 'ln -s /usr/lib/python2.7/dist-packages/scipy ~/virtualenv/python2.7/lib/python2.7/site-packages/'
+  - 'ln -s /usr/lib/python2.7/dist-packages/matplotlib ~/virtualenv/python2.7/lib/python2.7/site-packages/'
   - 'pip install pandas --quiet'
   - 'pip install celery --quiet'
   - 'pip install biopython --quiet'
