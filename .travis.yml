@@ -1,10 +1,13 @@
 language: python
 python:
   - '2.7'
+before_install:
+  - 'sudo apt-get install python-numpy-dev'
+  - 'sudo apt-get install python-scipy-dev'
 install:
   - 'sudo apt-get install $(grep -vE "^\s*#" package_list.txt  | tr "\n" " ")'
-  - 'pip install numpy --quiet'
-  - 'pip install scipy'
+  - 'ln -s /usr/lib/python2.7/dist-packages/numpy ~/virtualenv/python2.7/lib/python2.7/site-packages/'
+  - 'ln -s /usr/lib/python2.7/dist-packages/scipy ~/virtualenv/python2.7/lib/python2.7/site-packages/'
   - 'pip install pandas --quiet'
   - 'pip install celery --quiet'
   - 'pip install biopython --quiet'
