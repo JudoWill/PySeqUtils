@@ -23,7 +23,7 @@ def test_load_pwms():
                 elif name + '-R' not in pwm_dict:
                     all_found = False
                     missing.append(name)
-                elif 'Bio.Motif._Motif.Motif' not in str(type(pwm_dict[name])):
+                elif 'motif' not in str(type(pwm_dict[name])):
                     all_correct = False
                     wrongs.append(name)
 

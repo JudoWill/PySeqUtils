@@ -1,6 +1,6 @@
 __author__ = 'will'
 from Bio.Seq import Seq
-from Bio import Motif
+from Bio import motifs
 from Bio.Alphabet import IUPAC
 from itertools import groupby
 from operator import methodcaller
@@ -34,7 +34,7 @@ def Load_PWMS(path=None):
                     name = lines.next().strip().split()[-1].lower()
                 else:
                     tmp = ''.join(lines)
-                    mot = Motif.read(StringIO(tmp), 'jaspar-pfm')
+                    mot = motifs.read(StringIO(tmp), 'pfm')
                     yield name, mot
                     yield name+'-R', mot.reverse_complement()
 
