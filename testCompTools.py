@@ -47,8 +47,15 @@ def test_group_score_seq():
               ('name1', 'CC'),
               ('name1', 'AA')]
 
-    mu, nmu = CompTools.group_score_seq(groupA, groupB)
+    mu, nmu = CompTools.group_score_seq(groupA, groupB, has_names=True)
 
-    ok_(np.all(mu == 0.2), 'Group scores are incorrect!')
-    ok_(np.all(nmu == 0.38), 'Null scores are incorrect!')
+    yield ok_, np.all(mu == 0.2), 'Group scores are incorrect!'
+    yield ok_, np.all(nmu == 0.38), 'Null scores are incorrect!'
+
+    groupA = [seq for _, seq in groupA]
+    groupB = [seq for _, seq in groupB]
+
+    mu, nmu = CompTools.group_score_seq(groupA, groupB, has_names=False)
+    yield ok_, np.all(mu == 0.2), 'Group scores are incorrect!'
+    yield ok_, np.all(nmu == 0.38), 'Null scores are incorrect!'
 

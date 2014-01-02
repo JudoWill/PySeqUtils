@@ -47,13 +47,17 @@ def group_score(gAcol, gBcol, score_func=identity_score):
     return mu
 
 
-def group_score_seq(groupA, groupB, score_func=identity_score):
+def group_score_seq(groupA, groupB, score_func=identity_score, has_names=True):
     """Takes an input of multi-aligned sequences and evaluates the group_score
      and null_score at each column in the alignment.
     """
 
-    Aseqs = [seq for _, seq in groupA]
-    Bseqs = [seq for _, seq in groupB]
+    if has_names:
+        Aseqs = [seq for _, seq in groupA]
+        Bseqs = [seq for _, seq in groupB]
+    else:
+        Aseqs = list(groupA)
+        Bseqs = list(groupB)
 
     seq_len = len(Aseqs[0])
     assert all(len(seq) == seq_len for seq in Aseqs), 'All sequences need to be the same length!'
