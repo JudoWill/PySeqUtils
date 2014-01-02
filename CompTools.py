@@ -11,7 +11,7 @@ def identity_score(a, b, weight=1, null=0):
     return weight if a.lower() == b.lower() else null
 
 
-def expect_score(gAcol, gBcol, score_func=identity_score):
+def null_score(gAcol, gBcol, score_func=identity_score):
     """Calculates the expected score under the null-hypothesis that the two
      inputs come from the same distribution.
 
@@ -30,7 +30,7 @@ def expect_score(gAcol, gBcol, score_func=identity_score):
     return np.average(scores, weights=weights)
 
 
-def score_groups(gAcol, gBcol, score_func=identity_score):
+def group_score(gAcol, gBcol, score_func=identity_score):
     """Calculates the score under the hypothesis that the two inputs come from
      different distributions.
 
