@@ -1,7 +1,7 @@
 from __future__ import division
 __author__ = 'will'
 from collections import Counter
-from itertools import product
+from itertools import product, izip
 import numpy as np
 
 
@@ -28,3 +28,20 @@ def expect_score(gAcol, gBcol, score_func=identity_score):
         weights.append(vA*vB)
 
     return np.average(scores, weights=weights)
+
+
+def score_groups(gAcol, gBcol, score_func=identity_score):
+    """Calculates the score under the hypothesis that the two inputs come from
+     different distributions.
+
+     It does this by doing a pairwise comparison using the identity function.
+    """
+
+    pairwise_items = product(gAcol, gBcol)
+    pair_counts = Counter(pairwise_items)
+    order = sorted(pair_counts.keys())
+    nums = np.array([score_func(a, b) for a, b in order])
+    weights = np.array([pair_counts[key] for key in order])
+    mu = np.average(nums, weights=weights)
+
+    return mu

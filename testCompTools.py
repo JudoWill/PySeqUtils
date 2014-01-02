@@ -19,5 +19,15 @@ def test_expect_score():
     colB = 'TCCCA'
 
     score = CompTools.expect_score(colA, colB)
-    cor_score = 0.38 #by hand
+    cor_score = 0.38  # by hand
+    eq_(score, cor_score, 'Wrong result compared to the hand-calculation')
+
+
+def test_score_groups():
+
+    colA = 'AAAAT'
+    colB = 'TCCCA'
+
+    score = CompTools.score_groups(colA, colB)
+    cor_score = 0.2  # by hand
     eq_(score, cor_score, 'Wrong result compared to the hand-calculation')
