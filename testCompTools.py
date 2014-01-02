@@ -1,5 +1,6 @@
 __author__ = 'will'
 from nose.tools import ok_, eq_
+import numpy as np
 import CompTools
 
 
@@ -31,3 +32,23 @@ def test_score_groups():
     score = CompTools.group_score(colA, colB)
     cor_score = 0.2  # by hand
     eq_(score, cor_score, 'Wrong result compared to the hand-calculation')
+
+
+def test_group_score_seq():
+
+    groupA = [('name1', 'AA'),
+              ('name1', 'AA'),
+              ('name1', 'AA'),
+              ('name1', 'AA'),
+              ('name1', 'TT')]
+    groupB = [('name1', 'TT'),
+              ('name1', 'CC'),
+              ('name1', 'CC'),
+              ('name1', 'CC'),
+              ('name1', 'AA')]
+
+    mu, nmu = CompTools.group_score_seq(groupA, groupB)
+
+    ok_(np.all(mu == 0.2), 'Group scores are incorrect!')
+    ok_(np.all(nmu == 0.38), 'Null scores are incorrect!')
+

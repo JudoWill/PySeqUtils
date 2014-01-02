@@ -45,3 +45,26 @@ def group_score(gAcol, gBcol, score_func=identity_score):
     mu = np.average(nums, weights=weights)
 
     return mu
+
+
+def group_score_seq(groupA, groupB, score_func=identity_score):
+    """Takes an input of multi-aligned sequences and evaluates the group_score
+     and null_score at each column in the alignment.
+    """
+
+    Aseqs = [seq for _, seq in groupA]
+    Bseqs = [seq for _, seq in groupB]
+
+    seq_len = len(Aseqs[0])
+    assert all(len(seq) == seq_len for seq in Aseqs), 'All sequences need to be the same length!'
+    assert all(len(seq) == seq_len for seq in Bseqs), 'All sequences need to be the same length!'
+
+    Acol_wise = izip(*Aseqs)
+    Bcol_wise = izip(*Bseqs)
+    mus = []
+    nmus = []
+    for gAcol, gBcol in izip(Acol_wise, Bcol_wise):
+        mus.append(group_score(gAcol, gBcol, score_func=score_func))
+        nmus.append(null_score(gAcol, gBcol, score_func=score_func))
+
+    return np.array(mus), np.array(nmus)
