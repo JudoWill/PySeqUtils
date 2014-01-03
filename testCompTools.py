@@ -80,7 +80,7 @@ M rows = ACGT, cols = ACGT
 
     cor_ID = "WILL-TEST"
     cor_desc = "A test matrix"
-    cor_pmid = "2051488"
+    cor_pmid = "PMID: 2051488"
     cor_author = "Dampier, W"
     cor_text = "A matrix to test my ability to load in the data"
     cor_dict = {('A', 'A'): 0,
