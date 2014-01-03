@@ -139,8 +139,4 @@ def load_dist_mats(path=None):
         for key, lines in groupby(handle, key=keyfunc):
             if not key:
                 instr = ''.join(lines)
-                try:
-                    yield load_sub_mat(instr)
-                except:
-                    print instr
-                    yield load_sub_mat(instr)
+                yield load_sub_mat(instr)
