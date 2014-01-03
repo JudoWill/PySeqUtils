@@ -59,3 +59,51 @@ def test_group_score_seq():
     yield ok_, np.all(mu == -0.8), 'Group scores are incorrect!'
     yield ok_, np.all(nmu == -0.62), 'Null scores are incorrect!'
 
+
+def test_load_sub_mat():
+
+    tmp = """
+H WILL-TEST
+D A test matrix
+R PMID: 2051488
+A Dampier, W
+T A matrix to test my ability to load in the data
+J Will dampier's code
+M rows = ACGT, cols = ACGT
+      0
+     -3.      0
+     -7.     -1.      0
+     -4.      3.      2.      0
+      """
+
+    ID, desc, pmid, author, text, out_dict = CompTools.load_sub_mat(tmp)
+
+    cor_ID = "WILL-TEST"
+    cor_desc = "A test matrix"
+    cor_pmid = "2051488"
+    cor_author = "Dampier, W"
+    cor_text = "A matrix to test my ability to load in the data"
+    cor_dict = {('A', 'A'): 0,
+                ('A', 'C'): -3,
+                ('A', 'G'): -7,
+                ('A', 'T'): -4,
+                ('C', 'A'): -3,
+                ('C', 'C'): 0,
+                ('C', 'G'): -1,
+                ('C', 'T'): 3,
+                ('G', 'A'): -7,
+                ('G', 'C'): -1,
+                ('G', 'G'): 0,
+                ('G', 'T'): 2,
+                ('T', 'A'): -4,
+                ('T', 'C'): 3,
+                ('T', 'G'): 2,
+                ('T', 'T'): 0}
+
+    yield eq_, cor_ID, ID
+    yield eq_, cor_desc, desc
+    yield eq_, cor_pmid, pmid
+    yield eq_, cor_author, author
+    yield eq_, cor_text, text
+    for key, val in cor_dict.items():
+        yield eq_, val, out_dict.get(key, None), 'Incorrect value at (%s, %s)' % key

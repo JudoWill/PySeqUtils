@@ -72,3 +72,10 @@ def group_score_seq(groupA, groupB, score_func=identity_score, has_names=True):
         nmus.append(null_score(gAcol, gBcol, score_func=score_func))
 
     return np.array(mus), np.array(nmus)
+
+
+def load_sub_mat(instr):
+    """Just a testing sub right now
+    """
+
+    return None, None, None, None, None, {}
