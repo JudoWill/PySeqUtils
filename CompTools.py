@@ -5,7 +5,7 @@ from itertools import product, izip
 import numpy as np
 
 
-def identity_score(a, b, weight=1, null=0):
+def identity_score(a, b, weight=0, null=-1):
     """Returns a particular value whenever it encounters identical inputs."""
 
     return weight if a.lower() == b.lower() else null
