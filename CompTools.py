@@ -2,6 +2,8 @@ from __future__ import division
 __author__ = 'will'
 from collections import Counter
 from itertools import product, izip
+from StringIO import StringIO
+import re
 import numpy as np
 
 
@@ -74,8 +76,43 @@ def group_score_seq(groupA, groupB, score_func=identity_score, has_names=True):
     return np.array(mus), np.array(nmus)
 
 
+def flatten_mat(handle):
+    """A simple utility function for flattening the substitution matrix inputs.
+    """
+
+    for row_pos, line in enumerate(handle):
+        parts = line.split()
+        for col_pos, num in enumerate(parts):
+            yield row_pos, col_pos, num
+
+
 def load_sub_mat(instr):
     """Just a testing sub right now
     """
 
-    return None, None, None, None, None, {}
+    grab_info = lambda x: x.strip().split(None, 1)[-1]
+
+    ID, desc, ref, author, text, row_line = [None]*6
+    handle = StringIO(instr)
+    for line in handle:
+        if line.startswith('H '):
+            ID = grab_info(line)
+        elif line.startswith('D '):
+            desc = grab_info(line)
+        elif line.startswith('R '):
+            ref = grab_info(line)
+        elif line.startswith('A '):
+            author = grab_info(line)
+        elif line.startswith('T '):
+            text = grab_info(line)
+        elif line.startswith('M '):
+            row_line = line
+            break
+
+    rows, cols = re.findall('= ([\w\-]+)', row_line)
+    out_dict = {}
+    for row_pos, col_pos, num in flatten_mat(handle):
+        out_dict[(rows[row_pos], cols[col_pos])] = float(num)
+        out_dict[(cols[col_pos], rows[row_pos])] = float(num)
+
+    return ID, desc, ref, author, text, out_dict
