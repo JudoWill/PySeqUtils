@@ -7,6 +7,7 @@ from operator import methodcaller
 import re
 import os
 import numpy as np
+import pandas as pd
 
 
 def identity_score(a, b, weight=0, null=-1):
@@ -39,7 +40,9 @@ def null_score(gAcol, gBcol, score_func=identity_score):
         scores.append(score_func(kA, kB))
         weights.append(vA*vB)
 
-    return np.average(scores, weights=weights)
+    mu = np.average(scores, weights=weights)
+    std = np.average(np.array(scores)-mu, weights=weights)
+    return mu, std
 
 
 def group_score(gAcol, gBcol, score_func=identity_score):
@@ -55,8 +58,9 @@ def group_score(gAcol, gBcol, score_func=identity_score):
     nums = np.array([score_func(a, b) for a, b in order])
     weights = np.array([pair_counts[key] for key in order])
     mu = np.average(nums, weights=weights)
+    std = np.average(nums-mu, weights=weights)
 
-    return mu
+    return mu, std
 
 
 def group_score_seq(groupA, groupB, score_func=identity_score, has_names=True):
@@ -77,13 +81,26 @@ def group_score_seq(groupA, groupB, score_func=identity_score, has_names=True):
 
     Acol_wise = izip(*Aseqs)
     Bcol_wise = izip(*Bseqs)
-    mus = []
-    nmus = []
-    for gAcol, gBcol in izip(Acol_wise, Bcol_wise):
-        mus.append(group_score(gAcol, gBcol, score_func=score_func))
-        nmus.append(null_score(gAcol, gBcol, score_func=score_func))
+    tdata = {}
+    for pos, (gAcol, gBcol) in enumerate(izip(Acol_wise, Bcol_wise)):
 
-    return np.array(mus), np.array(nmus)
+        inter_mu, inter_std = group_score(gAcol, gBcol, score_func=score_func)
+        null_mu, null_std = null_score(gAcol, gBcol, score_func=score_func)
+        gAmu, gA_std = null_score(gAcol, [], score_func=score_func)
+        gBmu, gB_std =  null_score(gBcol, [], score_func=score_func)
+
+        tdata[pos] = {
+            'InterMu': inter_mu,
+            'InterStd': inter_std,
+            'NullMu': null_mu,
+            'NullStd': null_std,
+            'gAMu': gAmu,
+            'gAStd': gA_std,
+            'gBmu': gBmu,
+            'gBStd': gB_std,
+        }
+
+    return pd.DataFrame(tdata).T
 
 
 def flatten_mat(handle):

@@ -34,7 +34,7 @@ def test_expect_score():
     colA = 'AAAAT'
     colB = 'TCCCA'
 
-    score = CompTools.null_score(colA, colB)
+    score, _ = CompTools.null_score(colA, colB)
     cor_score = -0.62  # by hand
     eq_(score, cor_score, 'Wrong result compared to the hand-calculation')
 
@@ -44,7 +44,7 @@ def test_score_groups():
     colA = 'AAAAT'
     colB = 'TCCCA'
 
-    score = CompTools.group_score(colA, colB)
+    score, _ = CompTools.group_score(colA, colB)
     cor_score = -0.8  # by hand
     eq_(score, cor_score, 'Wrong result compared to the hand-calculation')
 
@@ -62,17 +62,17 @@ def test_group_score_seq():
               ('name1', 'CC'),
               ('name1', 'AA')]
 
-    mu, nmu = CompTools.group_score_seq(groupA, groupB, has_names=True)
+    df = CompTools.group_score_seq(groupA, groupB, has_names=True)
 
-    yield ok_, np.all(mu == -0.8), 'Group scores are incorrect!'
-    yield ok_, np.all(nmu == -0.62), 'Null scores are incorrect!'
+    yield ok_, np.all(df['InterMu'] == -0.8), 'Group scores are incorrect!'
+    yield ok_, np.all(df['NullMu'] == -0.62), 'Null scores are incorrect!'
 
     groupA = [seq for _, seq in groupA]
     groupB = [seq for _, seq in groupB]
 
-    mu, nmu = CompTools.group_score_seq(groupA, groupB, has_names=False)
-    yield ok_, np.all(mu == -0.8), 'Group scores are incorrect!'
-    yield ok_, np.all(nmu == -0.62), 'Null scores are incorrect!'
+    df = CompTools.group_score_seq(groupA, groupB, has_names=False)
+    yield ok_, np.all(df['InterMu'] == -0.8), 'Group scores are incorrect!'
+    yield ok_, np.all(df['NullMu'] == -0.62), 'Null scores are incorrect!'
 
 
 def test_load_sub_mat():
