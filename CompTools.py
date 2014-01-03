@@ -1,9 +1,11 @@
 from __future__ import division
 __author__ = 'will'
 from collections import Counter
-from itertools import product, izip
+from itertools import product, izip, groupby
 from StringIO import StringIO
+from operator import methodcaller
 import re
+import os
 import numpy as np
 
 
@@ -116,3 +118,21 @@ def load_sub_mat(instr):
         out_dict[(cols[col_pos], rows[row_pos])] = float(num)
 
     return ID, desc, ref, author, text, out_dict
+
+
+def load_dist_mats(path=None):
+
+    if path is None:
+        direc = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(direc, 'HIVDBFiles', 'aa_sub_mat.txt')
+
+    with open(path) as handle:
+        keyfunc = methodcaller('startswith', '//')
+        for key, lines in groupby(handle, key=keyfunc):
+            if not key:
+                instr = ''.join(lines)
+                try:
+                    yield load_sub_mat(instr)
+                except:
+                    print instr
+                    yield load_sub_mat(instr)

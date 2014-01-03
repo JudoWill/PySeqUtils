@@ -2,6 +2,8 @@ __author__ = 'will'
 from nose.tools import ok_, eq_
 import numpy as np
 import CompTools
+import os
+from itertools import product
 
 
 def test_identity_score():
@@ -107,3 +109,28 @@ M rows = ACGT, cols = ACGT
     yield eq_, cor_text, text
     for key, val in cor_dict.items():
         yield eq_, val, out_dict.get(key, None), 'Incorrect value at (%s, %s)' % key
+
+
+def test_load_dist_mats():
+
+    direc = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(direc, 'HIVDBFiles', 'aa_sub_mat.txt')
+
+    wanted_IDs = []
+    with open(path) as handle:
+        for line in handle:
+            if line.startswith('H '):
+                wanted_IDs.append(line.strip().split(None, 1)[-1])
+
+    test_iter = CompTools.load_dist_mats()
+    for out_tup, wanted_id in zip(test_iter, wanted_IDs):
+        ID, desc, pmid, author, text, out_dict = out_tup
+        yield eq_, ID, wanted_id, 'Incorrect ID found'
+        #eq_(ID, wanted_id, 'Incorrect ID found')
+
+        missing = []
+        for tup in product('ARNDCQEGHILKMFPSTWYV', 'ARNDCQEGHILKMFPSTWYV'):
+            if tup not in out_dict:
+                missing.append(tup)
+        #ok_(len(missing) == 0, '%s was missing %i items!' % (ID, len(missing)))
+        yield ok_, len(missing) == 0, '%s was missing %i items!' % (ID, len(missing))
