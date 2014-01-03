@@ -12,7 +12,15 @@ import numpy as np
 def identity_score(a, b, weight=0, null=-1):
     """Returns a particular value whenever it encounters identical inputs."""
 
-    return weight if a.lower() == b.lower() else null
+    return weight if a.upper() == b.upper() else null
+
+
+def replacement_mat_score(dist_mat, a, b, missing=None):
+    """Calculates the replacement score based on the provided dict.
+    Useful to use with functools.partial!
+    """
+
+    return dist_mat.get((a.upper(), b.upper()), missing)
 
 
 def null_score(gAcol, gBcol, score_func=identity_score):

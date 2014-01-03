@@ -4,16 +4,29 @@ import numpy as np
 import CompTools
 import os
 from itertools import product
+from functools import partial
 
 
 def test_identity_score():
 
     cis = CompTools.identity_score
     yield eq_, cis('A', 'A'), 0, 'Missed basic IDENT!'
-    yield eq_, cis('A', 'B'), -1, 'Missed basic NON-IDENT!'
+    yield eq_, cis('C', 'A'), -1, 'Missed basic NON-IDENT!'
     yield eq_, cis('A', 'a'), 0, 'Missed basic IDENT! with cases'
     yield eq_, cis('A', 'A', weight=10), 10, 'Missed basic IDENT with weight'
     yield eq_, cis('A', 'B', null=-5), -5, 'Missed basic IDENT with weight'
+
+
+def test_replacement_mat_score():
+
+    dmat = {('A', 'A'): 0,
+            ('C', 'A'): -1}
+    cis = partial(CompTools.replacement_mat_score, dmat)
+    yield eq_, cis('A', 'A'), 0, 'Missed basic IDENT!'
+    yield eq_, cis('C', 'A'), -1, 'Missed basic NON-IDENT!'
+    yield eq_, cis('A', 'a'), 0, 'Missed basic IDENT! with cases'
+    yield eq_, cis('G', 'A'), None, 'Missed basic IDENT with weight'
+    yield eq_, cis('G', 'A', missing=-5), -5, 'Missed basic IDENT with weight'
 
 
 def test_expect_score():
